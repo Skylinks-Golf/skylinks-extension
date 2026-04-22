@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Skylinks Tools",
+  "version": "1.4",
+  "description": "Tool Modules for Skylinks",
+  "permissions": ["activeTab", "scripting", "tabs"],
+  "host_permissions": [
+    "https://us.merchantos.com/*",
+    "https://www.chronogolf.ca/*"
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Skylinks Tools",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  }
+}
