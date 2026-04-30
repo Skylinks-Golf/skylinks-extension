@@ -1,0 +1,521 @@
+/*
+  Skylinks WordPress CSS Library
+  Pruned to active selectors used by current local templates.
+  Scope contract: styles are intended to run inside `.skylinks-scope` wrappers.
+*/
+
+:root {
+  --skylinks-color-bg: #ffffff;
+  --skylinks-color-surface: #ffffff;
+  --skylinks-color-text: #1c191a;
+  --skylinks-color-muted: #4b5563;
+  --skylinks-color-border: #d1d5db;
+  --skylinks-color-brand: #eeb02b;
+  --skylinks-color-brand-strong: #ca9625;
+  --skylinks-color-ink: #262b2f;
+  --skylinks-color-link: #1f2937;
+  --skylinks-color-focus: #b77f00;
+
+  --skylinks-font-body: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --skylinks-font-heading: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
+
+  --skylinks-text-sm: 0.9rem;
+  --skylinks-text-xl: 1.35rem;
+  --skylinks-text-2xl: clamp(1.7rem, 3vw, 2.4rem);
+
+  --skylinks-space-2: 0.5rem;
+  --skylinks-space-3: 0.75rem;
+  --skylinks-space-4: 1rem;
+  --skylinks-space-5: 1.25rem;
+  --skylinks-space-6: 1.5rem;
+
+  --skylinks-radius-sm: 8px;
+  --skylinks-radius-md: 12px;
+  --skylinks-shadow-sm: 0 2px 8px rgba(26, 24, 20, 0.08);
+
+  --skylinks-container-max: 1000px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--skylinks-font-body);
+  color: var(--skylinks-color-text);
+  background:
+    radial-gradient(circle at 10% 10%, #fff8e3 0%, transparent 45%),
+    radial-gradient(circle at 85% 5%, #f2f3f5 0%, transparent 50%),
+    linear-gradient(180deg, #ffffff 0%, #f7f7f8 100%);
+}
+
+.skylinks-scope {
+  max-width: var(--skylinks-container-max);
+  margin: 0 auto;
+  padding: 24px;
+  font-family: var(--skylinks-font-body);
+  color: var(--skylinks-color-text);
+  line-height: 1.6;
+}
+
+.skylinks-scope h1,
+.skylinks-scope h2,
+.skylinks-scope h3 {
+  margin: 0 0 var(--skylinks-space-4);
+  font-family: var(--skylinks-font-heading);
+  color: var(--skylinks-color-ink);
+  line-height: 1.2;
+}
+
+.skylinks-scope h1 {
+  font-size: var(--skylinks-text-2xl);
+}
+
+.skylinks-scope h2 {
+  font-size: var(--skylinks-text-xl);
+}
+
+.skylinks-scope p {
+  margin: 0 0 var(--skylinks-space-4);
+}
+
+.skylinks-scope a {
+  color: var(--skylinks-color-link);
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1.5px;
+}
+
+.skylinks-scope a:hover {
+  color: var(--skylinks-color-text);
+}
+
+.skylinks-scope a:focus-visible {
+  color: var(--skylinks-color-text);
+  outline: 2px solid var(--skylinks-color-focus);
+  outline-offset: 2px;
+}
+
+.skylinks-header,
+.skylinks-card {
+  background: var(--skylinks-color-surface);
+  border: 1px solid var(--skylinks-color-border);
+  border-radius: var(--skylinks-radius-md);
+  box-shadow: var(--skylinks-shadow-sm);
+}
+
+.skylinks-header {
+  padding: var(--skylinks-space-5) var(--skylinks-space-6);
+  margin-bottom: var(--skylinks-space-5);
+}
+
+.skylinks-card {
+  padding: var(--skylinks-space-6);
+  margin-bottom: var(--skylinks-space-4);
+}
+
+.skylinks-meta {
+  color: var(--skylinks-color-muted);
+  font-size: var(--skylinks-text-sm);
+}
+
+.skylinks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--skylinks-space-3);
+}
+
+.skylinks-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--skylinks-space-2);
+  margin-top: var(--skylinks-space-2);
+}
+
+.skylinks-nav a {
+  display: inline-block;
+  text-decoration: none;
+  color: var(--skylinks-color-ink);
+  font-weight: 600;
+  padding: 8px 11px;
+  border: 1px solid transparent;
+  border-radius: var(--skylinks-radius-sm);
+}
+
+.skylinks-nav a:hover,
+.skylinks-nav a:focus-visible {
+  background: #f8f8f8;
+  border-color: #f0e3b4;
+}
+
+.skylinks-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--skylinks-space-2);
+  margin-top: var(--skylinks-space-4);
+}
+
+.skylinks-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--skylinks-color-brand);
+  border-radius: 10px;
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 10px 14px;
+  background: var(--skylinks-color-brand);
+  color: #1c1b19;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.skylinks-button:hover,
+.skylinks-button:focus-visible {
+  background: var(--skylinks-color-brand-strong);
+  border-color: var(--skylinks-color-brand-strong);
+  color: #1c191a;
+  outline: 2px solid var(--skylinks-color-focus);
+  outline-offset: 2px;
+}
+
+.skylinks-button--ghost {
+  background: transparent;
+  border-color: var(--skylinks-color-ink);
+  color: var(--skylinks-color-ink);
+}
+
+.skylinks-button--ghost:hover,
+.skylinks-button--ghost:focus-visible {
+  background: var(--skylinks-color-ink);
+  color: #fff;
+  outline: 2px solid var(--skylinks-color-focus);
+  outline-offset: 2px;
+}
+
+.skylinks-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.skylinks-list li {
+  margin-bottom: var(--skylinks-space-2);
+}
+
+.skylinks-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.skylinks-table th,
+.skylinks-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--skylinks-color-border);
+}
+
+.skylinks-table th {
+  color: var(--skylinks-color-ink);
+  font-weight: 700;
+}
+
+.skylinks-embed-frame {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--skylinks-color-border);
+  border-radius: var(--skylinks-radius-sm);
+  background: #fff;
+}
+
+.skylinks-anchor-target {
+  display: block;
+  position: relative;
+  top: -88px;
+  visibility: hidden;
+}
+
+/* Registration Form Layer (shared) */
+.skylinks-container {
+  max-width: var(--skylinks-container-max);
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.skylinks-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  box-shadow: var(--skylinks-shadow-sm);
+  cursor: pointer;
+}
+
+.skylinks-btn-primary {
+  background: var(--skylinks-color-brand);
+  color: #1c1b19;
+}
+
+.skylinks-btn-primary:hover,
+.skylinks-btn-primary:focus-visible {
+  background: var(--skylinks-color-brand-strong);
+  border-color: var(--skylinks-color-brand-strong);
+  color: #1c191a;
+  outline: 2px solid var(--skylinks-color-focus);
+  outline-offset: 2px;
+}
+
+.skylinks-btn-outline {
+  background: transparent;
+  color: var(--skylinks-color-ink);
+  border-color: var(--skylinks-color-ink);
+}
+
+.skylinks-btn-outline:hover,
+.skylinks-btn-outline:focus-visible {
+  background: #f8f8f8;
+  outline: 2px solid var(--skylinks-color-focus);
+  outline-offset: 2px;
+}
+
+.skylinks-btn-block {
+  display: flex;
+  width: 100%;
+}
+
+.skylinks-btn:disabled,
+.skylinks-btn[aria-disabled="true"] {
+  background: #e5e7eb;
+  color: #6b7280;
+  border-color: #e5e7eb;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.skylinks-input,
+.skylinks-scope input[type="text"],
+.skylinks-scope input[type="email"],
+.skylinks-scope input[type="tel"],
+.skylinks-scope input[type="date"],
+.skylinks-scope select,
+.skylinks-scope textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--skylinks-color-border);
+  border-radius: var(--skylinks-radius-sm);
+  background: #fff;
+  color: var(--skylinks-color-text);
+}
+
+.skylinks-input:focus,
+.skylinks-scope select:focus,
+.skylinks-scope textarea:focus {
+  outline: 2px solid var(--skylinks-color-focus);
+  outline-offset: 2px;
+}
+
+.skylinks-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.skylinks-alert {
+  padding: 12px 14px;
+  border-radius: var(--skylinks-radius-md);
+  border: 1px solid transparent;
+}
+
+.skylinks-alert-success {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.skylinks-error {
+  color: #991b1b;
+  font-size: var(--skylinks-text-sm);
+  min-height: 1.1em;
+}
+
+.skylinks-required {
+  color: var(--skylinks-color-brand);
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.skylinks-form {
+  display: grid;
+  gap: var(--skylinks-space-6);
+}
+
+.skylinks-form-note {
+  border: 1px dashed var(--skylinks-color-border);
+  border-radius: var(--skylinks-radius-md);
+  padding: var(--skylinks-space-4);
+  background: #fff;
+  font-size: var(--skylinks-text-sm);
+}
+
+.skylinks-terms {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+}
+
+.skylinks-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--skylinks-space-2);
+  font-size: var(--skylinks-text-sm);
+  line-height: 1.4;
+}
+
+.skylinks-checkbox-input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--skylinks-color-brand);
+}
+
+.skylinks-checkbox-input[aria-invalid="true"] {
+  outline: 2px solid #fecaca;
+  outline-offset: 2px;
+}
+
+.skylinks-input[aria-invalid="true"],
+.skylinks-scope select[aria-invalid="true"] {
+  border-color: #fecaca;
+}
+
+.skylinks-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  opacity: 0;
+  animation: skylinks-spin 0.8s linear infinite;
+}
+
+.skylinks-btn[data-loading="true"] .skylinks-spinner,
+.skylinks-button[data-loading="true"] .skylinks-spinner {
+  opacity: 1;
+}
+
+.skylinks-btn[data-loading="true"] .skylinks-button-text,
+.skylinks-button[data-loading="true"] .skylinks-button-text {
+  opacity: 0.7;
+}
+
+.skylinks-button-text {
+  display: inline-block;
+}
+
+.skylinks-text-muted {
+  color: var(--skylinks-color-muted);
+}
+
+.skylinks-flex {
+  display: flex;
+}
+
+.skylinks-hide {
+  display: none !important;
+}
+
+.skylinks-mt-0 {
+  margin-top: 0;
+}
+
+.skylinks-mt-4 {
+  margin-top: var(--skylinks-space-4);
+}
+
+.skylinks-mt-8 {
+  margin-top: calc(var(--skylinks-space-6) + var(--skylinks-space-2));
+}
+
+.skylinks-mb-4 {
+  margin-bottom: var(--skylinks-space-4);
+}
+
+.skylinks-mb-8 {
+  margin-bottom: calc(var(--skylinks-space-6) + var(--skylinks-space-2));
+}
+
+.skylinks-scope #card-element {
+  min-height: 48px;
+  background: #fff;
+}
+
+.skylinks-card-element {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.skylinks-price-row {
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+
+.skylinks-price-value {
+  font-size: 1.25em;
+}
+
+@keyframes skylinks-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (min-width: 768px) {
+  .skylinks-grid-md-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .skylinks-grid-md-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .skylinks-scope {
+    padding: 18px;
+  }
+
+  .skylinks-header,
+  .skylinks-card {
+    padding: var(--skylinks-space-5);
+  }
+}
+
+@media (max-width: 640px) {
+  .skylinks-scope {
+    padding: 12px;
+  }
+
+  .skylinks-actions {
+    flex-direction: column;
+  }
+
+  .skylinks-button {
+    width: 100%;
+  }
+}
+
+/* WordPress template compatibility overrides */
+footer section#media_image-3 {
+  max-width: 200px;
+}
+
+/* Hide legacy GolfNow template nav item while menus are cleaned in WP admin */
+#menu-item-49:nth-child(2) {
+  display: none;
+}
