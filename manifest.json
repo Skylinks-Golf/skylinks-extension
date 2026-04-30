@@ -6,7 +6,11 @@
   "permissions": ["activeTab", "scripting", "tabs"],
   "host_permissions": [
     "https://us.merchantos.com/*",
-    "https://www.chronogolf.ca/*"
+    "https://www.chronogolf.ca/*",
+    "https://portal.getselectpi.com/*",
+    "https://app.perfectvenue.com/*",
+    "https://api.perfectvenue.com/*",
+    "https://348a3926020407.na.deputy.com/*"
   ],
   "icons": {
     "16": "icons/icon16.png",
