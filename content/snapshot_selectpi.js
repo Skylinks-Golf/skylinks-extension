@@ -8,6 +8,36 @@
     }
 
     document.getElementById('sp-snapshot-overlay')?.remove();
+    document.getElementById('sps-responsive')?.remove();
+
+    // Inject responsive styles scoped to the overlay (removed on close)
+    const _style = document.createElement('style');
+    _style.id = 'sps-responsive';
+    _style.textContent = `
+      #sps-top-grid, #sps-bucket-grid {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+      }
+      @media (max-width: 720px) {
+        #sps-top-grid, #sps-bucket-grid { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 599px) {
+        #sp-snapshot-overlay { align-items: flex-start !important; }
+        #sp-snapshot-overlay .sps-card {
+          width: 100% !important; max-width: 100% !important; border-radius: 0 !important;
+          box-shadow: none !important; max-height: 100vh; max-height: 100dvh;
+        }
+        #sps-body { padding: 12px !important; }
+        #sps-date-label { display: none; }
+        #sp-snapshot-overlay .sps-kpi-row {
+          display: grid !important; grid-template-columns: 1fr 1fr; gap: 12px !important;
+        }
+        #sp-snapshot-overlay .sps-kpi { min-width: 0 !important; flex: none !important; }
+      }
+      @media (max-width: 380px) {
+        #sp-snapshot-overlay .sps-kpi-row { grid-template-columns: 1fr !important; }
+      }
+    `;
+    document.head.appendChild(_style);
 
     const { escHtml, makeLogger } = window.SkylinksUtils;
     const log = makeLogger('SP Snapshot');
@@ -22,6 +52,7 @@
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:999999;display:flex;align-items:center;justify-content:center;font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;';
 
     const card = document.createElement('div');
+    card.className = 'sps-card';
     card.style.cssText = 'background:#fff;border-radius:14px;max-width:960px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.35);';
 
     card.innerHTML = `
@@ -74,6 +105,11 @@
     function destroyCharts() {
         Object.values(state.charts).forEach(c => { try { c.destroy(); } catch (_) {} });
         state.charts = {};
+    }
+    function cleanup() {
+        destroyCharts();
+        overlay.remove();
+        document.getElementById('sps-responsive')?.remove();
     }
 
     // 7. fetchAll — all 5 endpoints in parallel; individual failures show a banner but don't abort
@@ -154,8 +190,8 @@
 
         // --- Layout templates ---
         const kpiCard = (big, label, sub) => `
-<div style="background:#fff;border:1px solid #d1d5db;border-left:4px solid #eeb02b;border-radius:12px;padding:20px 24px;box-shadow:0 2px 8px rgba(0,0,0,0.06);flex:1;min-width:200px;">
-  <div style="font-size:30px;font-weight:800;color:#262b2f;font-family:'Trebuchet MS',sans-serif;white-space:nowrap;">${big}</div>
+<div class="sps-kpi" style="background:#fff;border:1px solid #d1d5db;border-left:4px solid #eeb02b;border-radius:12px;padding:20px 24px;box-shadow:0 2px 8px rgba(0,0,0,0.06);flex:1;min-width:200px;">
+  <div style="font-size:28px;font-weight:800;color:#262b2f;font-family:'Trebuchet MS',sans-serif;white-space:nowrap;">${big}</div>
   <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;">${escHtml(label)}</div>
   ${sub ? `<div style="font-size:12px;color:#9ca3af;margin-top:2px;">${escHtml(sub)}</div>` : ''}
 </div>`;
@@ -167,11 +203,7 @@
 </div>`;
 
         $('sps-body').innerHTML = `
-<style>
-  #sps-top-grid, #sps-bucket-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-  @media (max-width:720px) { #sps-top-grid, #sps-bucket-grid { grid-template-columns:1fr; } }
-</style>
-<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
+<div class="sps-kpi-row" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
   ${kpiCard(fmtMoney(dispenserIncome), 'Dispenser Income', 'Today')}
   ${kpiCard(fmtNum(totalBalls),        'Balls Dispensed',  'combined LEFT + RIGHT')}
   ${kpiCard(fmtNum(totalBucketQty),    'Buckets Sold',     fmtMoney(totalBucketRev) + ' revenue')}
@@ -301,11 +333,16 @@
 
         // --- Chart 4 + table: TotalsByBucketSize → {bucketSize:"Small", count, amount, size} ---
         // Sort by the numeric `size` field (0=smallest). Apply amber ramp by position.
-        const BUCKET_AMBER = ['#fde68a', '#f59e0b', '#b45309', '#78350f'];
+        // SelectPi internal names → Skylinks display names
+        const BUCKET_NAME_MAP = { 'Small': 'Warm Up', 'Medium': 'Large', 'Large': 'Jumbo', 'Jumbo': 'Mega' };
+        const BUCKET_AMBER    = ['#fde68a', '#f59e0b', '#b45309', '#78350f'];
 
         if (bucketModels.length) {
             const sorted  = [...bucketModels].sort((a, b) => Number(a.size ?? 999) - Number(b.size ?? 999));
-            const bLabels = sorted.map(r => r.bucketSize ?? r.keyCaption ?? r.name ?? 'Unknown');
+            const bLabels = sorted.map(r => {
+                const raw = r.bucketSize ?? r.keyCaption ?? r.name ?? 'Unknown';
+                return BUCKET_NAME_MAP[raw] ?? raw;
+            });
             const bQtys   = sorted.map(r => Number(r.count ?? r.quantity ?? 0));
             const bRevs   = sorted.map(r => Number(r.amount ?? r.revenue ?? 0));
             const bColors = sorted.map((_, i) => BUCKET_AMBER[i % BUCKET_AMBER.length]);
@@ -362,8 +399,8 @@
     }
 
     // 10. Wire up events
-    $('sps-close').onclick   = () => { destroyCharts(); overlay.remove(); };
-    overlay.onclick          = e  => { if (e.target === overlay) { destroyCharts(); overlay.remove(); } };
+    $('sps-close').onclick   = () => cleanup();
+    overlay.onclick          = e  => { if (e.target === overlay) cleanup(); };
     $('sps-refresh').onclick = () => load($('sps-date').value);
     $('sps-date').onchange   = () => load($('sps-date').value);
 
