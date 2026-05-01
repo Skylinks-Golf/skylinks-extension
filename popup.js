@@ -22,11 +22,27 @@ chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
         body.appendChild(btn);
 
     } else if (url.includes('portal.getselectpi.com')) {
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-purple';
-        btn.textContent = 'Weekly Earnings Report';
-        btn.onclick = () => injectScript('content/selectpi.js');
-        body.appendChild(btn);
+        const snapshotBtn = document.createElement('button');
+        snapshotBtn.className = 'btn btn-purple';
+        snapshotBtn.textContent = 'Daily Snapshot Report';
+        snapshotBtn.onclick = () => {
+            chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                files: [
+                    'content/utils.js',
+                    'content/vendor/chart.umd.min.js',
+                    'content/snapshot_selectpi.js',
+                ],
+            });
+            window.close();
+        };
+        body.appendChild(snapshotBtn);
+
+        const weeklyBtn = document.createElement('button');
+        weeklyBtn.className = 'btn btn-purple';
+        weeklyBtn.textContent = 'Weekly Earnings Report';
+        weeklyBtn.onclick = () => injectScript('content/selectpi.js');
+        body.appendChild(weeklyBtn);
 
     } else if (url.includes('app.perfectvenue.com')) {
         const btn = document.createElement('button');
