@@ -127,11 +127,13 @@
             // 1. Fetch shop config, discount definitions, and categories in parallel
             setStatus('Fetching definitions…');
             log('Fetching shop config, discounts, and categories…');
-            const [shopData, discounts, categories] = await Promise.all([
+            const [shopData, activeDiscounts, archivedDiscounts, categories] = await Promise.all([
                 apiFetch(`${BASE}/Shop.json?shopID=${SHOP_ID}`),
-                fetchAllPaged(`${BASE}/Discount.json?limit=100`, 'Discount'),
+                fetchAllPaged(`${BASE}/Discount.json?limit=100&archived=false`, 'Discount'),
+                fetchAllPaged(`${BASE}/Discount.json?limit=100&archived=true`,  'Discount'),
                 fetchAllPaged(`${BASE}/Category.json?limit=100`, 'Category'),
             ]);
+            const discounts = [...activeDiscounts, ...archivedDiscounts];
 
             const shops = toArr(shopData.Shop);
             const shop = shops.find(s => s.shopID === SHOP_ID) || shops[0];
@@ -139,12 +141,14 @@
             log(`Shop: "${shop?.name}", isTaxInclusive=${isTaxInclusive}`);
 
             const discountMap = {};
-            discounts.forEach(d => { discountMap[d.discountID] = d.name; });
+            discounts.forEach(d => {
+                discountMap[d.discountID] = d.archived === 'true' ? d.name + ' [ARCHIVED]' : d.name;
+            });
 
             const categoryMap = {};
             categories.forEach(c => { categoryMap[c.categoryID] = { name: c.name, parentID: c.parentID }; });
 
-            log(`Loaded ${discounts.length} discount(s), ${categories.length} category/categories.`);
+            log(`Loaded ${activeDiscounts.length} active + ${archivedDiscounts.length} archived discount(s), ${categories.length} category/categories.`);
             setProgress(10);
 
             // 2. Build UTC time range for the Pacific calendar day
@@ -222,13 +226,17 @@
                         return r2 > 0 ? pct(r1) + ' + ' + pct(r2) : pct(r1);
                     })();
 
-                    // Zero-value lines on GF items carry a logical payment method
+                    // Payment method overrides: discount-name rules apply regardless of total;
+                    // zero-total rules handle comps, vouchers, and marketing lines.
+                    const lineTotal = parseFloat(line.calcTotal);
                     const linePaymentMethod = (() => {
-                        if (parseFloat(line.calcTotal) === 0) {
-                            if (iName.includes(' GF')) {
-                                if (iName.includes('VIP Voucher')) return 'VIP Voucher';
-                                if (cust) return 'Membership Golf Package';
-                            }
+                        if (dName === 'Owner Comp') return 'Owner Comp';
+                        if (dName === 'Skylinks Membership Bucket [ARCHIVED]') return '_X_ 100% - Skylinks Membership';
+                        if (dName === '_X_Owner Approved - Security' || dName === '_X_Owner Approved - DJ') return 'DJ Comps';
+                        if (lineTotal === 0) {
+                            if (iName.includes('VIP Voucher')) return 'VIP Voucher';
+                            if (dName === 'Beer Bucket Discount 5x$20' || dName === 'Shooter w/Bucket Discount') return 'Marketing';
+                            if (iName.includes(' GF') && cust) return 'Membership Golf Package';
                             if (dName) return dName;
                         }
                         return paymentMethod;

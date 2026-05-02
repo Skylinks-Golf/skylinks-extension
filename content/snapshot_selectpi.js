@@ -169,7 +169,11 @@
 
         // --- KPI calculations ---
 
-        // Dispenser income: EarningsAtDispenser.models[] → each row has {price, quantity}
+        // Dispenser income: summed from EarningsAtDispenser.models[].amount.
+        // We use this endpoint rather than Summary.totalIncome because EarningsAtDispenser
+        // is already fetched, its field names are confirmed (same as selectpi.js), and it
+        // isolates dispenser-only revenue — Summary.totalIncome includes cashier, mobile,
+        // and web sales which would overstate the dispenser KPI.
         const dispenserModels = dispensers?.models ?? [];
         const dispenserIncome = dispenserModels.reduce(
             (s, r) => s + Number(r.amount ?? (r.price ?? 0) * (r.quantity ?? 1)), 0
@@ -249,7 +253,21 @@
                     maintainAspectRatio: false,
                     cutout: '62%',
                     plugins: {
-                        legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 12 } },
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 12 },
+                                padding: 14,
+                                generateLabels: chart => chart.data.labels.map((label, i) => ({
+                                    text: `${label}  ${fmtNum(locVals[i])}  (${locTotal > 0 ? (locVals[i] / locTotal * 100).toFixed(1) : '0.0'}%)`,
+                                    fillStyle: locColors[i],
+                                    strokeStyle: locColors[i],
+                                    lineWidth: 0,
+                                    hidden: false,
+                                    index: i,
+                                })),
+                            },
+                        },
                         tooltip: {
                             callbacks: {
                                 label: ctx => {
