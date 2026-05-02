@@ -14,7 +14,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
         btn.onclick = () => injectScript('content/merchantos.js');
         body.appendChild(btn);
 
-    } else if (url.includes('chronogolf.ca')) {
+    } else if (url.includes('chronogolf.ca') || url.includes('chronogolf.com')) {
         const btn = document.createElement('button');
         btn.className = 'btn btn-green';
         btn.textContent = 'Import Customers';

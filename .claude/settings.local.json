@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\data\\\\skylinks\\\\skylinks-extension\" -Force)",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\data\\\\skylinks\\\\skylinks-extension\" -Depth 1 | Where-Object { $_.Name -notmatch \"^\\\\.git\" } | Format-Table Name, PSIsContainer)"
+    ]
+  }
+}

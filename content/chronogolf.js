@@ -5,6 +5,51 @@
     const { TD, TH, escHtml, escCsv, makeLogger } = window.SkylinksUtils;
     const log = makeLogger('CG Import');
 
+    // SGC Topsheet column → API field mapping
+    const TOPSHEET_FIELD_MAP = {
+        'first name':     'first_name',
+        'last name':      'last_name',
+        'email':          'email',
+        'phone':          'phone',
+        'ghin':           'member_no',
+        'street address': 'address_one',
+        'city':           'city',
+        'state':          'state_code',
+        'zip code':       'post_code',
+    };
+    const GENDER_MAP = { male: 1, female: 2, m: 1, f: 2 };
+
+    function isTopsheetFormat(rows) {
+        if (!rows.length) return false;
+        const keys = Object.keys(rows[0]);
+        return keys.includes('first name') || keys.includes('membership tier');
+    }
+
+    function parseTopsheetDate(str) {
+        if (!str) return '';
+        const p = str.trim().split('/');
+        if (p.length !== 3) return str;
+        const [m, d, y] = p;
+        return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+
+    function normalizeTopsheetRow(row) {
+        const normalized = { _lineNumber: row._lineNumber };
+        for (const [src, dest] of Object.entries(TOPSHEET_FIELD_MAP)) {
+            normalized[dest] = row[src] || '';
+        }
+        const genderKey = (row['gender'] || '').toLowerCase().trim();
+        const genderInt = GENDER_MAP[genderKey];
+        if (genderInt !== undefined) normalized.gender = String(genderInt);
+        const dob = parseTopsheetDate(row['birthdate'] || '');
+        if (dob) normalized.date_of_birth = dob;
+        normalized.country_code = row['country code'] || 'US';
+        const tierName = (row['membership tier'] || '').toLowerCase().trim();
+        const tierId = affiliationTypesByName[tierName] ?? affiliationTypesByName[`sgc: ${tierName}`];
+        normalized.affiliation_type_id = tierId !== undefined ? String(tierId) : '';
+        return normalized;
+    }
+
     // Resolve club ID from Angular app state in localStorage (reliable),
     // falling back to URL hash for pages where state hasn't loaded yet.
     function resolveClubId() {
@@ -42,8 +87,9 @@
       <h2 style="margin:0;font-size:20px;font-weight:700;font-family:'Trebuchet MS','Segoe UI',Tahoma,sans-serif;color:#262b2f;">Customer Import</h2>
     </div>
     <p style="margin:0 0 12px 0;font-size:13px;color:#4b5563;line-height:1.5;">
-      Upload a CSV to batch-create customers in Lightspeed Golf (Club ${CLUB_ID}).
-      Required columns: <strong>first_name, last_name, email, affiliation_type_id</strong>.
+      Upload a CSV to batch-create customers in Lightspeed Golf (Club ${CLUB_ID}).<br>
+      <strong>SGC Topsheet format</strong> (First Name, Last Name, Email, Membership Tier, …) is auto-detected.<br>
+      <strong>API format</strong>: required columns <strong>first_name, last_name, email, affiliation_type_id</strong>.
     </p>
     <div id="cg-aff-section" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#475569;">
       Loading affiliation types…
@@ -97,7 +143,7 @@
 
     function cgFetch(path, opts = {}) {
         const { headers: extraHeaders, ...rest } = opts;
-        return fetch('https://www.chronogolf.ca' + path, {
+        return fetch(window.location.origin + path, {
             credentials: 'include',
             headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrfToken(), ...extraHeaders },
             ...rest,
@@ -178,18 +224,23 @@
     // ── Init: load affiliation types + existing emails concurrently ──────────
 
     let existingEmails = null; // null=loading, Set=ready, false=unavailable
+    let affiliationTypesByName = {}; // lowercase name → id, for Topsheet format resolution
     let csvText = null;
     let parsedRows = null;
 
     async function loadAffiliationTypes() {
         try {
-            const r = await cgFetch('/private_api/affiliation_types');
+            const r = await cgFetch(`/private_api/organizations/${CLUB_ID}/affiliation_types`);
             if (!r.ok) throw new Error('HTTP ' + r.status);
             const types = await r.json();
             if (!Array.isArray(types) || types.length === 0) {
                 $('cg-aff-section').textContent = 'No affiliation types found.';
                 return;
             }
+            types.forEach(t => {
+                const name = (t.name || t.label || '').toLowerCase().trim();
+                if (name) affiliationTypesByName[name] = t.id;
+            });
             let html = '<strong style="color:#262b2f;">Affiliation Types</strong><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">';
             types.forEach(t => {
                 html += `<span style="background:#e2e8f0;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600;">${escHtml(t.id)} — ${escHtml(t.name || t.label || '')}</span>`;
@@ -240,7 +291,13 @@
 
             // Pre-flight: parse + validate immediately on file select
             try {
-                parsedRows = parseCSV(csvText);
+                const raw = parseCSV(csvText);
+                if (isTopsheetFormat(raw)) {
+                    log('Detected SGC Topsheet format — normalizing columns.');
+                    parsedRows = raw.map(normalizeTopsheetRow);
+                } else {
+                    parsedRows = raw;
+                }
             } catch (e) {
                 showPreflight([{ type: 'error', msg: 'CSV parse error: ' + e.message }]);
                 return;

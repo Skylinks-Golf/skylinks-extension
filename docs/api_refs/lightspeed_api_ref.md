@@ -217,7 +217,7 @@ All endpoints are prefixed with `/private_api/`. The API uses standard REST conv
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
-| GET | `/private_api/affiliation_types` | All player/affiliation types |
+| GET | `/private_api/organizations/{orgId}/affiliation_types` | All player/affiliation types for an org |
 | GET | `/private_api/affiliation_types/{id}` | Single type |
 
 **Methods:** `isRolePublic()`, `isRoleMember()`, `getTypeLabel()`, `requiresAffiliation()`, `allowMemberTeesheet()`
