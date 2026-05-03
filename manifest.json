@@ -7,6 +7,7 @@
   "host_permissions": [
     "https://us.merchantos.com/*",
     "https://www.chronogolf.ca/*",
+    "https://www.chronogolf.com/*",
     "https://portal.getselectpi.com/*",
     "https://app.perfectvenue.com/*",
     "https://api.perfectvenue.com/*",

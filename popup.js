@@ -16,6 +16,7 @@ const CORE_FILES = [
 const TOOLS = [
   { match: url => url.includes('us.merchantos.com'), label: 'Sales Lines Report', color: 'btn-blue', files: ['content/merchantos.js'] },
   { match: url => url.includes('chronogolf.ca') || url.includes('chronogolf.com'), label: 'Import Customers', color: 'btn-green', files: ['content/chronogolf.js'] },
+  { match: url => url.includes('chronogolf.ca') || url.includes('chronogolf.com'), label: 'Export Tee Sheet', color: 'btn-teal', files: ['content/tee_sheet_export.js'] },
   { match: url => url.includes('portal.getselectpi.com'), label: 'Daily Snapshot Report', color: 'btn-purple', files: ['content/vendor/chart.umd.min.js', 'content/snapshot_selectpi.js'] },
   { match: url => url.includes('portal.getselectpi.com'), label: 'Weekly Earnings Report', color: 'btn-purple', files: ['content/selectpi.js'] },
   { match: url => url.includes('app.perfectvenue.com'), label: 'Weekly Analytics Report', color: 'btn-orange', files: ['content/perfectvenue.js'] },
