@@ -72,15 +72,18 @@
     return;
   }
 
-  // CSRF token: prefer Angular injector (authoritative), fall back to cookie.
   function getCsrfToken() {
+    for (const s of document.querySelectorAll('script:not([src])')) {
+      const m = s.textContent.match(/"CSRF_TOKEN"\s*:\s*"([^"]+)"/);
+      if (m) return m[1];
+    }
+    // Fallback: Angular injector works if script runs in MAIN world
     try {
       const token = angular.element(document.body).injector()
         .get('$http').defaults.headers.common['X-CSRF-Token'];
       if (token) return token;
-    } catch (e) { /* not available */ }
-    return document.querySelector('meta[name="csrf-token"]')?.content
-      || decodeURIComponent(document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/)?.[1] || '');
+    } catch (e) { /* isolated world — angular not accessible */ }
+    return '';
   }
 
   const api = apiClient({
@@ -99,50 +102,64 @@
   }
 
   function buildPayload(row) {
-    const payload = {
+    const customer = {
       club_id: parseInt(CLUB_ID, 10),
       first_name: row.first_name,
       last_name: row.last_name,
       email: row.email,
-      affiliation_type_id: parseInt(row.affiliation_type_id, 10),
+      affiliation_type_ids: [parseInt(row.affiliation_type_id, 10)],
     };
-    if (row.phone) payload.phone = row.phone;
-    if (row.gender) payload.gender = parseInt(row.gender, 10);
-    if (row.date_of_birth) payload.date_of_birth = row.date_of_birth;
-    if (row.member_no) payload.member_no = row.member_no;
-    if (row.bag_number) payload.bag_number = row.bag_number;
-    if (row.address_one) payload.address_one = row.address_one;
-    if (row.address_two) payload.address_two = row.address_two;
-    if (row.city) payload.city = row.city;
-    if (row.country_code) payload.country_code = row.country_code.toUpperCase();
-    if (row.state_code) payload.state_code = row.state_code;
-    if (row.post_code) payload.post_code = row.post_code;
-    return payload;
+    if (row.phone) customer.phone = row.phone;
+    if (row.gender) customer.gender = parseInt(row.gender, 10);
+    if (row.date_of_birth) customer.date_of_birth = row.date_of_birth;
+    const memberNo = row.member_no || row.ghin;
+    if (memberNo) customer.member_no = memberNo;
+    if (row.bag_number) customer.bag_number = row.bag_number;
+    if (row.address_one) customer.address_one = row.address_one;
+    if (row.address_two) customer.address_two = row.address_two;
+    if (row.city) customer.city = row.city;
+    if (row.country_code) customer.country_code = row.country_code.toUpperCase();
+    if (row.state_code) customer.state_code = row.state_code;
+    if (row.post_code) customer.post_code = row.post_code;
+    return { customer };
   }
 
   async function createCustomer(payload) {
+    let r;
     try {
-      // api.raw doesn't auto-set auth headers — pass them explicitly for this
-      // special case that also needs X-XSRF-TOKEN alongside X-CSRF-Token.
-      const r = await api.raw(`/private_api/clubs/${CLUB_ID}/customers`, {
+      r = await api.raw(`/private_api/clubs/${CLUB_ID}/customers`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
           'X-CSRF-Token': getCsrfToken(),
-          'X-XSRF-TOKEN': getCsrfToken(),
         },
         body: JSON.stringify(payload),
       });
-      const data = await r.json();
-      if (!r.ok) {
-        const msg = data.errors ? data.errors.map(e => e.message).join('; ') : (data.error?.message || `HTTP ${r.status}`);
-        return { success: false, status: r.status, message: msg };
+    } catch (e) {
+      log('Network error:', e.message);
+      return { success: false, status: 0, message: `Network error: ${e.message}` };
+    }
+
+    if (!r.ok) {
+      const text = await r.text().catch(() => '');
+      let msg = `HTTP ${r.status}`;
+      try {
+        const data = JSON.parse(text);
+        msg = data.errors ? data.errors.map(e => e.message).join('; ') : (data.error?.message || msg);
+      } catch (_) {
+        if (text) msg += ` — ${text.slice(0, 120)}`;
       }
+      log(`POST failed ${r.status}:`, msg);
+      return { success: false, status: r.status, message: msg };
+    }
+
+    try {
+      const data = await r.json();
       return { success: true, id: data.id, ref: data.ref };
     } catch (e) {
-      return { success: false, status: 0, message: e.message };
+      return { success: false, status: r.status, message: `Created but could not parse response: ${e.message}` };
     }
   }
 
