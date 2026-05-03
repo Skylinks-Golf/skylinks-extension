@@ -3,7 +3,17 @@
     "allow": [
       "Bash(Get-ChildItem -Path \"c:\\\\data\\\\skylinks\\\\skylinks-extension\" -Force)",
       "Bash(Select-Object Name, PSIsContainer)",
-      "PowerShell(Get-ChildItem -Path \"c:\\\\data\\\\skylinks\\\\skylinks-extension\" -Depth 1 | Where-Object { $_.Name -notmatch \"^\\\\.git\" } | Format-Table Name, PSIsContainer)"
+      "PowerShell(Get-ChildItem -Path \"c:\\\\data\\\\skylinks\\\\skylinks-extension\" -Depth 1 | Where-Object { $_.Name -notmatch \"^\\\\.git\" } | Format-Table Name, PSIsContainer)",
+      "Bash(rtk git *)",
+      "Bash(ollama ps *)",
+      "Bash(rtk grep *)",
+      "Bash(rtk read *)",
+      "Bash(/home/ideans/.citadel-jupiter/bin/koad-agent context *)",
+      "Bash(/home/ideans/.citadel-jupiter/bin/koad-agent intel *)",
+      "Bash(/home/ideans/.citadel-jupiter/bin/koad --help)",
+      "Bash(/home/ideans/.citadel-jupiter/bin/koad intel *)",
+      "Bash(rtk ls *)",
+      "Bash(rtk wc *)"
     ]
   }
 }
