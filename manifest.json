@@ -3,7 +3,7 @@
   "name": "Skylinks Tools",
   "version": "1.5",
   "description": "Tool Modules for Skylinks",
-  "permissions": ["activeTab", "scripting", "tabs"],
+  "permissions": ["activeTab", "scripting", "tabs", "clipboardWrite"],
   "host_permissions": [
     "https://us.merchantos.com/*",
     "https://www.chronogolf.ca/*",
