@@ -8,9 +8,9 @@
     btn.style.cssText = `border:1.5px solid ${theme.color.border};background:transparent;padding:8px 16px;border-radius:${theme.radius.input};cursor:pointer;font-size:0.875rem;`;
     btn.addEventListener('click', async () => {
       try {
-        await navigator.clipboard.write(new ClipboardItem({
+        await navigator.clipboard.write([new ClipboardItem({
           'text/html': new Blob([html], { type: 'text/html' }),
-        }));
+        })]);
         btn.innerHTML = '✅  Copied!';
         setTimeout(() => { btn.textContent = label; }, 2000);
       } catch (err) {
