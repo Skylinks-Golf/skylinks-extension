@@ -206,8 +206,12 @@
           try {
             await handler(vals, ctx);
           } catch (e) {
-            handle.setStatus('❌ Error: ' + e.message, 'error');
-            console.error(e);
+            const isAuth = e && e.code === 'AUTH';
+            const msg = (e && e.message) ? e.message : 'An unexpected error occurred.';
+            const suffix = isAuth ? '' : ' Details in console.';
+            handle.setStatus('❌ ' + msg + suffix, 'error');
+            handle.hideProgress();
+            console.error('[Skylinks]', e);
           } finally {
             runBtn.disabled = false;
             runBtn.style.opacity = '1';

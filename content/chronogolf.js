@@ -2,7 +2,7 @@
 
   const BATCH_SIZE = 3;
   const BATCH_DELAY_MS = 500;
-  const { TD, TH, escHtml, escCsv, makeLogger, createModal, apiClient, paginate, csv, download, dom } = window.SkylinksUtils;
+  const { TD, TH, escHtml, escCsv, makeLogger, createModal, apiClient, paginate, csv, download, dom, runPreflight, SkylinksError } = window.SkylinksUtils;
   const log = makeLogger('CG Import');
 
   // SGC Topsheet column → API field mapping
@@ -302,6 +302,28 @@
     if (!parsedRows) return;
 
     this.disabled = true;
+    // Preflight: CSRF token + affiliation types contract
+    const csrf = getCsrfToken();
+    if (!csrf) {
+      showPreflight([{ type: 'error', msg: 'CSRF token not available. Please reload the page and try again.' }]);
+      this.disabled = false;
+      return;
+    }
+    try {
+      await runPreflight({
+        name:    'Affiliation Types',
+        checkFn: async () => {
+          const types = await api.get(`/private_api/organizations/${CLUB_ID}/affiliation_types`);
+          if (!Array.isArray(types) || types.length === 0) throw new SkylinksError({ code: 'SCHEMA', message: 'No affiliation types returned.', detail: 'Endpoint returned empty or non-array response.' });
+          return types;
+        },
+        expectedKeys: [],
+      });
+    } catch (err) {
+      showPreflight([{ type: 'error', msg: 'Preflight failed: ' + (err.message || 'Unknown error') }]);
+      this.disabled = false;
+      return;
+    }
     modal.resetResult();
     modal.setProgress(0);
     log(`Starting import of ${parsedRows.length} rows for club ${CLUB_ID}`);
