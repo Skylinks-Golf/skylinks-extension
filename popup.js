@@ -1,6 +1,7 @@
 const CORE_FILES = [
   'content/utils.js',
   'content/core/theme.js',
+  'content/core/config.js',
   'content/core/dom.js',
   'content/core/dates.js',
   'content/core/errors.js',
