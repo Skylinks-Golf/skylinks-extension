@@ -6,7 +6,7 @@
   const PAGE_SIZE  = 100;
   const PAGE_GUARD = 50;
 
-  const { escHtml, makeLogger, createModal, apiClient, paginate, dates, dom } = window.SkylinksUtils;
+  const { escHtml, makeLogger, createModal, apiClient, paginate, dates, dom, runPreflight, SkylinksError } = window.SkylinksUtils;
   const log   = makeLogger('LS Snapshot');
   const toArr = v => dom.toArr(v);
 
@@ -610,6 +610,24 @@
     destroyCharts();
     $('lss-body').innerHTML = `<div style="text-align:center;padding:48px;color:#64748b;font-size:14px;">Loading…</div>`;
     showProgress(); setProgress(5);
+
+    // Preflight: verify auth + shop contract before heavy fetch pipeline
+    try {
+      await runPreflight({
+        name:         'Lightspeed Shop',
+        checkFn:      () => api.get('/Shop.json'),
+        expectedKeys: ['@attributes', 'shopID'],
+      });
+    } catch (err) {
+      hideProgress();
+      showError(
+        err.code === 'AUTH'
+          ? 'Not authenticated. Please reload the page and log in to Lightspeed.'
+          : 'Preflight check failed: ' + (err.detail || err.message),
+        true
+      );
+      return;
+    }
 
     try {
       await loadMeta();
