@@ -1,8 +1,9 @@
 (function PerfectVenueReportUI() {
 
-  const VENUE_ID = '15749';
+  const { escHtml, makeLogger, createModal, apiClient, csv, download, copy, table, runReport, dates, config } = window.SkylinksUtils;
 
-  const { escHtml, makeLogger, createModal, apiClient, csv, download, copy, table, runReport, dates } = window.SkylinksUtils;
+  const VENUE_ID = config.perfectVenue.venueId;
+
   const log = makeLogger('PV Report');
 
   const QUERY = `query ConversionRateAnalyticsOverview(
@@ -51,7 +52,7 @@ fragment ConversionRateAnalyticsFragment on ConversionRateAnalytics {
   const { monday: defaultMonday } = dates.weekRangeMonSun();
 
   const api = apiClient({
-    baseUrl: 'https://api.perfectvenue.com',
+    baseUrl: config.perfectVenue.baseUrl,
     auth: 'cookie',
     defaultHeaders: { Accept: '*/*' },
   });

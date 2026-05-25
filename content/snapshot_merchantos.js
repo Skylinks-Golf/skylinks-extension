@@ -1,12 +1,12 @@
 (function MerchantOSSnapshotUI() {
   if (document.getElementById('ls-snapshot-overlay')) return;
 
-  const ACCOUNT_ID = window.location.pathname.match(/\/Account\/(\d+)/)?.[1] || '305872';
-  const SHOP_ID    = '1';
-  const PAGE_SIZE  = 100;
-  const PAGE_GUARD = 50;
+  const { escHtml, makeLogger, createModal, apiClient, paginate, dates, dom, runPreflight, SkylinksError, config } = window.SkylinksUtils;
 
-  const { escHtml, makeLogger, createModal, apiClient, paginate, dates, dom, runPreflight, SkylinksError } = window.SkylinksUtils;
+  const ACCOUNT_ID = window.location.pathname.match(/\/Account\/(\d+)/)?.[1] || config.lightspeed.fallbackAccountId;
+  const SHOP_ID    = config.lightspeed.shopId;
+  const PAGE_SIZE  = config.lightspeed.pagination.pageSize;
+  const PAGE_GUARD = config.lightspeed.pagination.pageGuard;
   const log   = makeLogger('LS Snapshot');
   const toArr = v => dom.toArr(v);
 
