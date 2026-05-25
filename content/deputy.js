@@ -1,6 +1,8 @@
 (function DeputyReportUI() {
 
-  const BASE = 'https://348a3926020407.na.deputy.com';
+  const { escHtml, escCsv, makeLogger, createModal, apiClient, csv, download, copy, runReport, dates, config } = window.SkylinksUtils;
+
+  const BASE = config.deputy.baseUrl;
 
   // OU_GROUPS consolidates the three separate OU tables (PROSHOP_OU_IDS, ADMIN_OU_IDS,
   // OU_FALLBACK_NAMES) into a single source of truth.
@@ -18,7 +20,6 @@
   ];
   const UNGROUPED_FALLBACK_NAMES = { 4: 'Course Crew' };
 
-  const { escHtml, escCsv, makeLogger, createModal, apiClient, csv, download, copy, runReport, dates } = window.SkylinksUtils;
   const log = makeLogger('Deputy Report');
 
   const { monday: defaultStart, sunday: defaultEnd } = dates.weekRangeMonSun();

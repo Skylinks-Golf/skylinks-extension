@@ -1,13 +1,13 @@
 (function LightspeedSalesReportUI() {
 
-  const ACCOUNT_ID = window.location.pathname.match(/\/Account\/(\d+)/)?.[1] || '305872';
-  const SHOP_ID = '1';
-  const { TD, TH, escHtml, makeLogger, createModal, apiClient, paginate, csv, download, runReport, dates, dom } = window.SkylinksUtils;
+  const { TD, TH, escHtml, makeLogger, createModal, apiClient, paginate, csv, download, runReport, dates, dom, config } = window.SkylinksUtils;
+  const ACCOUNT_ID = window.location.pathname.match(/\/Account\/(\d+)/)?.[1] || config.lightspeed.fallbackAccountId;
+  const SHOP_ID = config.lightspeed.shopId;
   const log = makeLogger('LS Report');
 
   const PAYMENT_METHOD_RULES = [
     { when: ({ dName }) => dName === 'Owner Comp',                                                                      method: 'Owner Comp' },
-    { when: ({ dName }) => dName === 'Skylinks Membership Bucket [ARCHIVED]',                                           method: '_X_ 100% - Skylinks Membership' },
+    { when: ({ dName }) => dName === 'Skylinks Membership Bucket [ARCHIVED]',                                           method: 'Memberships' },
     { when: ({ dName }) => dName === '_X_Owner Approved - Security' || dName === '_X_Owner Approved - DJ',              method: 'DJ Comps' },
     { when: ({ lineTotal, iName }) => lineTotal === 0 && iName.includes('VIP Voucher'),                                 method: 'VIP Voucher' },
     { when: ({ lineTotal, dName }) => lineTotal === 0 && (dName === 'Beer Bucket Discount 5x$20' || dName === 'Shooter w/Bucket Discount'), method: 'Marketing' },
@@ -126,7 +126,10 @@
           .filter(p => p.archived !== 'true')
           .map(p => {
             const t = p.PaymentType?.type || '';
-            return (t === 'credit card' || t === 'debit card') ? 'Card Payment' : (p.PaymentType?.name || 'Unknown');
+            const pName = p.PaymentType?.name || 'Unknown';
+            if (t === 'credit card' || t === 'debit card') return 'Card Payment';
+            if (pName === '_X_ 100% - Skylinks Membership') return 'Memberships';
+            return pName;
           });
         const paymentMethod = payments.join(' / ');
 
