@@ -1,8 +1,10 @@
 const CORE_FILES = [
   'content/utils.js',
   'content/core/theme.js',
+  'content/core/config.js',
   'content/core/dom.js',
   'content/core/dates.js',
+  'content/core/errors.js',
   'content/core/api.js',
   'content/core/paginate.js',
   'content/core/csv.js',
@@ -11,6 +13,7 @@ const CORE_FILES = [
   'content/core/table.js',
   'content/core/modal.js',
   'content/core/workflow.js',
+  'content/core/preflight.js',
 ];
 
 const TOOLS = [

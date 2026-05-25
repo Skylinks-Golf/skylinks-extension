@@ -35,8 +35,13 @@
           headers['Content-Type'] = 'application/json';
         }
       }
-      const resp = await fetch(url, init);
-      if (!resp.ok) throw new Error(`${method} ${url} → ${resp.status} ${resp.statusText}`);
+      let resp;
+      try {
+        resp = await fetch(url, init);
+      } catch (err) {
+        throw ns.parseNetworkError(err, method, url);
+      }
+      if (!resp.ok) throw ns.parseHttpError(resp, method, url);
       return resp;
     }
 
@@ -77,7 +82,11 @@
         const resp = await fetchWithRetry('POST', url, { query, variables, operationName }, {});
         const data = await resp.json();
         if (data.errors && data.errors.length) {
-          throw new Error(data.errors.map(e => e.message).join('; '));
+          throw new ns.SkylinksError({
+            code:    ns.ErrorCode.SCHEMA,
+            message: 'GraphQL error.',
+            detail:  data.errors.map(e => e.message).join('; '),
+          });
         }
         return data.data;
       },
