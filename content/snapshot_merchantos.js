@@ -616,7 +616,7 @@
       await runPreflight({
         name:         'Lightspeed Shop',
         checkFn:      () => api.get('/Shop.json'),
-        expectedKeys: ['@attributes', 'shopID'],
+        expectedKeys: ['@attributes', 'Shop'],
       });
     } catch (err) {
       hideProgress();
