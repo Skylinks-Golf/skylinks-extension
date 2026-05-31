@@ -47,7 +47,7 @@
   document.head.appendChild(_style);
 
   // 2. State
-  const state = { charts: {} };
+  const state = { charts: {}, compGen: 0 };
 
   function destroyCharts() {
     Object.values(state.charts).forEach(c => { try { c.destroy(); } catch (_) {} });
@@ -96,6 +96,222 @@
   const fmtMoney = n => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const fmtNum   = n => Number(n || 0).toLocaleString('en-US');
   const fmtDateLabel = d => dates.formatLongDate(d);
+
+  // ── Comparison helpers ───────────────────────────────────────────────────
+  function addDaysStr(dateStr, n) {
+    const d = new Date(dateStr + 'T12:00:00');
+    d.setDate(d.getDate() + n);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function sameCalendarLastYear(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00');
+    d.setFullYear(d.getFullYear() - 1);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function shortWeekdayName(dateStr) {
+    return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(dateStr + 'T12:00:00').getDay()];
+  }
+
+  function extractKPIs(summary, dispensers, byBucket) {
+    const dModels = dispensers?.models ?? [];
+    const income  = dModels.reduce((s, r) => s + Number(r.amount ?? (r.price ?? 0) * (r.quantity ?? 1)), 0);
+    const sRow    = Array.isArray(summary?.model)  ? summary.model[0]
+                  : Array.isArray(summary?.models) ? summary.models[0]
+                  : (summary?.model ?? {});
+    const balls   = Number(sRow?.totalBallsDispensed ?? 0);
+    const bModels = byBucket?.models ?? [];
+    const buckets = bModels.reduce((s, r) => s + Number(r.count ?? r.quantity ?? 0), 0);
+    return { income, balls, buckets };
+  }
+
+  function deltaChip(curVal, compVal, label, fmtAbs) {
+    if (compVal == null) return '';
+    const delta  = curVal - compVal;
+    const pct    = compVal !== 0 ? (delta / compVal * 100) : 0;
+    const absPct = Math.abs(pct);
+    let color, arrow;
+    if (absPct <= 2)    { color = '#6b7280'; arrow = '●'; }
+    else if (delta > 0) { color = '#16a34a'; arrow = '▲'; }
+    else                { color = '#dc2626'; arrow = '▼'; }
+    const sign   = delta >= 0 ? '+' : '−';
+    const valStr = `${sign}${fmtAbs ? fmtAbs(Math.abs(delta)) : fmtNum(Math.abs(delta))}`;
+    const pctStr = `${delta >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;gap:8px;">` +
+      `<span style="font-size:10px;color:#9ca3af;">${escHtml(label)}</span>` +
+      `<span style="font-size:10px;font-weight:700;color:${color};white-space:nowrap;">${arrow} ${escHtml(valStr)} (${escHtml(pctStr)})</span>` +
+      `</div>`;
+  }
+
+  async function fetchComparisonDay(date) {
+    try {
+      const b = { start: date, end: date };
+      const [summary, dispensers, byBucket, byLocation, byHour] = await Promise.all([
+        post('/api/Report/Summary',              b).catch(() => null),
+        post('/api/Report/EarningsAtDispenser',  b).catch(() => null),
+        post('/api/Report/TotalsByBucketSize',   b).catch(() => null),
+        post('/api/Report/BallsDispensedByLocation', b).catch(() => null),
+        post('/api/Report/BallsDispensedByHour', { ...b, getMinutes: false }).catch(() => null),
+      ]);
+      return {
+        kpis:         extractKPIs(summary, dispensers, byBucket),
+        locModels:    byLocation?.models ?? [],
+        hourModels:   byHour?.models ?? [],
+        bucketModels: byBucket?.models ?? [],
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function loadComparisons(date, raw) {
+    const gen     = ++state.compGen;
+    const current = extractKPIs(raw.summary, raw.dispensers, raw.byBucket);
+    const wday    = shortWeekdayName(date);
+
+    const [r7, r14, r21, r28, rYr] = await Promise.all([
+      fetchComparisonDay(addDaysStr(date, -7)),
+      fetchComparisonDay(addDaysStr(date, -14)),
+      fetchComparisonDay(addDaysStr(date, -21)),
+      fetchComparisonDay(addDaysStr(date, -28)),
+      fetchComparisonDay(sameCalendarLastYear(date)),
+    ]);
+
+    if (gen !== state.compGen) return;
+
+    // ── KPI card deltas ──────────────────────────────────────────────────────
+    const kpi7  = r7?.kpis;
+    const kpi14 = r14?.kpis;
+    const kpi21 = r21?.kpis;
+    const kpi28 = r28?.kpis;
+    const kpiYr = rYr?.kpis;
+
+    const valid4 = [kpi7, kpi14, kpi21, kpi28].filter(Boolean);
+    const avg4   = valid4.length ? {
+      income:  valid4.reduce((s, k) => s + k.income,  0) / valid4.length,
+      balls:   valid4.reduce((s, k) => s + k.balls,   0) / valid4.length,
+      buckets: valid4.reduce((s, k) => s + k.buckets, 0) / valid4.length,
+    } : null;
+
+    const fillComp = (id, field, fmtAbs) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const rows = [
+        [kpi7?.[field],  `vs last ${wday}`],
+        [avg4?.[field],  `vs 4-${wday} avg`],
+        [kpiYr?.[field], 'vs last year'],
+      ].map(([comp, lbl]) => deltaChip(current[field], comp, lbl, fmtAbs)).filter(Boolean).join('');
+      el.innerHTML = rows
+        ? `<div style="border-top:1px solid #f3f4f6;margin-top:12px;padding-top:10px;">${rows}</div>`
+        : '';
+    };
+
+    fillComp('sps-comp-income',  'income',  v => fmtMoney(v));
+    fillComp('sps-comp-balls',   'balls',   null);
+    fillComp('sps-comp-buckets', 'buckets', null);
+
+    // ── Chart overlays ───────────────────────────────────────────────────────
+    const parseHour = key => {
+      const m = /^(\d{1,2})(AM|PM)$/i.exec(String(key ?? '').trim());
+      if (!m) return -1;
+      let h = parseInt(m[1], 10);
+      const pm = m[2].toUpperCase() === 'PM';
+      if (pm && h !== 12) h += 12;
+      if (!pm && h === 12) h = 0;
+      return h;
+    };
+    const toHourArray = models => {
+      const arr = new Array(24).fill(0);
+      (models ?? []).forEach(r => {
+        const h = parseHour(r.key);
+        if (h >= 0 && h < 24) arr[h] += Number(r.value ?? r.totalBalls ?? r.count ?? 0);
+      });
+      return arr;
+    };
+    const cardNote = (chart, text) => {
+      const card = chart.canvas?.parentElement?.parentElement;
+      if (!card) return;
+      let note = card.querySelector('.sps-chart-note');
+      if (!note) { note = document.createElement('div'); note.className = 'sps-chart-note'; card.appendChild(note); }
+      note.style.cssText = 'font-size:10px;color:#9ca3af;margin-top:8px;text-align:right;font-style:italic;';
+      note.textContent = text;
+    };
+
+    // Hourly bar — line overlays for last weekday + 4-weekday avg
+    if (state.charts.hourlyBar) {
+      const chart = state.charts.hourlyBar;
+      chart.data.datasets = chart.data.datasets.filter(d => !d.label?.startsWith('vs '));
+
+      const lastWkHours = r7?.hourModels?.length ? toHourArray(r7.hourModels) : null;
+      const validH4     = [r7, r14, r21, r28].filter(r => r?.hourModels?.length);
+      const avg4Hours   = validH4.length
+        ? Array.from({ length: 24 }, (_, h) =>
+            validH4.reduce((s, r) => s + toHourArray(r.hourModels)[h], 0) / validH4.length
+          )
+        : null;
+
+      if (lastWkHours) chart.data.datasets.push({
+        type: 'line', label: `vs last ${wday}`,
+        data: lastWkHours, borderColor: '#94a3b8', backgroundColor: 'transparent',
+        borderWidth: 2, borderDash: [4, 4], pointRadius: 2, pointBackgroundColor: '#94a3b8',
+        tension: 0.3, order: 1,
+      });
+      if (avg4Hours) chart.data.datasets.push({
+        type: 'line', label: `vs 4-${wday} avg`,
+        data: avg4Hours, borderColor: '#c084fc', backgroundColor: 'transparent',
+        borderWidth: 2, borderDash: [8, 4], pointRadius: 0,
+        tension: 0.3, order: 0,
+      });
+      if (lastWkHours || avg4Hours) {
+        chart.options.plugins.legend.display = true;
+        chart.options.plugins.legend.labels = { font: { size: 11 }, boxWidth: 24, padding: 12 };
+      }
+      chart.update();
+    }
+
+    // Station bar — faded grouped bars for last weekday
+    if (state.charts.stationBar && r7?.locModels?.length) {
+      const chart   = state.charts.stationBar;
+      const labels  = chart.data.labels;
+      const ALPHA   = { LEFT: 'rgba(13,148,136,0.35)', RIGHT: 'rgba(234,88,12,0.35)' };
+      const FALLBK  = ['rgba(139,92,246,0.35)','rgba(6,182,212,0.35)','rgba(236,72,153,0.35)'];
+      const loc7Map = Object.fromEntries(
+        r7.locModels.map(r => [r.key ?? r.stationName ?? r.name ?? '?', Number(r.value ?? r.totalBalls ?? r.count ?? 0)])
+      );
+      chart.data.datasets = chart.data.datasets.filter(d => !d.label?.startsWith('vs '));
+      chart.data.datasets.push({
+        label: `vs last ${wday}`,
+        data:  labels.map(lbl => loc7Map[lbl] ?? 0),
+        backgroundColor: labels.map((lbl, i) => ALPHA[lbl] ?? FALLBK[i % FALLBK.length]),
+        borderRadius: 6,
+      });
+      cardNote(chart, `Faded: last ${wday}`);
+      chart.update();
+    }
+
+    // Bucket bar — faded grouped bars for last weekday
+    if (state.charts.bucketBar && r7?.bucketModels?.length) {
+      const chart   = state.charts.bucketBar;
+      const labels  = chart.data.labels;
+      const BMAP    = { 'Small': 'Warm Up', 'Medium': 'Large', 'Large': 'Jumbo', 'Jumbo': 'Mega' };
+      const bkt7Map = Object.fromEntries(
+        r7.bucketModels.map(r => {
+          const raw = r.bucketSize ?? r.keyCaption ?? r.name ?? 'Unknown';
+          return [BMAP[raw] ?? raw, Number(r.count ?? r.quantity ?? 0)];
+        })
+      );
+      chart.data.datasets = chart.data.datasets.filter(d => !d.label?.startsWith('vs '));
+      chart.data.datasets.push({
+        label: `vs last ${wday}`,
+        data:  labels.map(lbl => bkt7Map[lbl] ?? 0),
+        backgroundColor: 'rgba(148,163,184,0.5)',
+        borderRadius: 4,
+      });
+      cardNote(chart, `Faded: last ${wday}`);
+      chart.update();
+    }
+  }
 
   // 4. fetchAll — all 5 endpoints in parallel; individual failures show a banner but don't abort
   async function fetchAll(date) {
@@ -161,11 +377,12 @@
 
     log('KPIs', { dispenserIncome, totalBalls, totalBucketQty, totalBucketRev });
 
-    const kpiCard = (big, label, sub) => `
+    const kpiCard = (big, label, sub, compId) => `
 <div class="sps-kpi" style="background:#fff;border:1px solid #d1d5db;border-left:4px solid #eeb02b;border-radius:12px;padding:20px 24px;box-shadow:0 2px 8px rgba(0,0,0,0.06);flex:1;min-width:200px;">
   <div style="font-size:28px;font-weight:800;color:#262b2f;font-family:'Trebuchet MS',sans-serif;white-space:nowrap;">${big}</div>
   <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;">${escHtml(label)}</div>
   ${sub ? `<div style="font-size:12px;color:#9ca3af;margin-top:2px;">${escHtml(sub)}</div>` : ''}
+  ${compId ? `<div id="${compId}"><div style="border-top:1px solid #f3f4f6;margin-top:12px;padding-top:10px;font-size:10px;color:#d1d5db;text-align:center;">Loading comparisons…</div></div>` : ''}
 </div>`;
     const chartCard = (title, canvasId, height) => `
 <div style="background:#f8fafc;border-radius:12px;padding:20px;border:1px solid #e2e8f0;">
@@ -175,9 +392,9 @@
 
     $('sps-body').innerHTML = `
 <div class="sps-kpi-row" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
-  ${kpiCard(fmtMoney(dispenserIncome), 'Dispenser Income', 'Today')}
-  ${kpiCard(fmtNum(totalBalls),        'Balls Dispensed',  'combined LEFT + RIGHT')}
-  ${kpiCard(fmtNum(totalBucketQty),    'Buckets Sold',     fmtMoney(totalBucketRev) + ' revenue')}
+  ${kpiCard(fmtMoney(dispenserIncome), 'Dispenser Income', 'Today',                   'sps-comp-income')}
+  ${kpiCard(fmtNum(totalBalls),        'Balls Dispensed',  'combined LEFT + RIGHT',    'sps-comp-balls')}
+  ${kpiCard(fmtNum(totalBucketQty),    'Buckets Sold',     fmtMoney(totalBucketRev) + ' revenue', 'sps-comp-buckets')}
 </div>
 <div id="sps-top-grid" style="margin-bottom:20px;">
   ${chartCard('Balls Dispensed — LEFT vs RIGHT', 'sps-donut')}
@@ -336,6 +553,7 @@
     destroyCharts();
     const data = await fetchAll(date);
     render(data);
+    loadComparisons(date, data);
   }
 
   // 7. Wire events
