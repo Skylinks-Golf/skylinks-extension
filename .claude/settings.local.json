@@ -14,7 +14,10 @@
       "Bash(/home/ideans/.citadel-jupiter/bin/koad intel *)",
       "Bash(rtk ls *)",
       "Bash(rtk wc *)",
-      "Bash(node --check /mnt/c/data/skylinks/apps/skylinks-extension/content/snapshot_merchantos.js)"
+      "Bash(node --check /mnt/c/data/skylinks/apps/skylinks-extension/content/snapshot_merchantos.js)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
