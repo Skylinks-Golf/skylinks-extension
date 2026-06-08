@@ -7,6 +7,8 @@
     HTTP:       'HTTP',
     SCHEMA:     'SCHEMA',
     RATE_LIMIT: 'RATE_LIMIT',
+    TIMEOUT:    'TIMEOUT',
+    VALIDATION: 'VALIDATION',
     UNKNOWN:    'UNKNOWN',
   };
 

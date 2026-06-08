@@ -1,7 +1,7 @@
 (function MerchantOSSnapshotUI() {
   if (document.getElementById('ls-snapshot-overlay')) return;
 
-  const { escHtml, makeLogger, createModal, apiClient, paginate, dates, dom, runPreflight, SkylinksError, config } = window.SkylinksUtils;
+  const { escHtml, makeLogger, createModal, apiClient, paginate, dates, dom, runPreflight, SkylinksError, config, format } = window.SkylinksUtils;
 
   const ACCOUNT_ID = window.location.pathname.match(/\/Account\/(\d+)/)?.[1] || config.lightspeed.fallbackAccountId;
   const SHOP_ID    = config.lightspeed.shopId;
@@ -11,7 +11,7 @@
   const toArr = v => dom.toArr(v);
 
   const api = apiClient({
-    baseUrl: `https://us.merchantos.com/API/Account/${ACCOUNT_ID}`,
+    baseUrl: `${config.lightspeed.baseUrl}/API/Account/${ACCOUNT_ID}`,
     auth: 'cookie',
     retry: { attempts: 2, delayMs: 1000, methods: ['GET'] },
   });
@@ -29,16 +29,9 @@
   };
 
   // ── Helpers ────────────────────────────────────────────────────────────────
-  const fmtMoney = n => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const fmtNum   = n => Number(n || 0).toLocaleString('en-US');
-  const fmtPct   = n => (n >= 0 ? '+' : '') + Number(n).toFixed(1) + '%';
+  const fmtMoney = format.money;
+  const fmtNum   = format.num;
 
-  function pacificHour(isoStr) {
-    return parseInt(
-      new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', hour: '2-digit', hour12: false }).format(new Date(isoStr)),
-      10
-    );
-  }
   function currentPacificHour() {
     return parseInt(
       new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', hour: '2-digit', hour12: false }).format(new Date()),
@@ -46,17 +39,10 @@
     );
   }
 
-  function weekdayName(dateStr) {
-    return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' });
-  }
-  function weekdayShort(dateStr) {
-    return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
-  }
-
   function anchorLabel(anchor, dateStr) {
     if (anchor === 'yesterday')    return 'Yesterday';
-    if (anchor === 'lastWeekday')  return `Last ${weekdayShort(dateStr)}`;
-    if (anchor === 'fourWeekAvg')  return `4-wk ${weekdayShort(dateStr)} avg`;
+    if (anchor === 'lastWeekday')  return `Last ${dates.formatWeekday(dateStr)}`;
+    if (anchor === 'fourWeekAvg')  return `4-wk ${dates.formatWeekday(dateStr)} avg`;
     return '';
   }
 
@@ -142,7 +128,7 @@
     document.querySelectorAll('.lss-anchor-btn').forEach(btn => {
       btn.classList.toggle('lss-active', btn.dataset.anchor === state.anchor);
     });
-    $('lss-wd-label').textContent = weekdayShort(state.date);
+    $('lss-wd-label').textContent = dates.formatWeekday(state.date);
     let label = dates.formatLongDate(state.date);
     if (state.date === todayStr) {
       const h = currentPacificHour();
@@ -210,7 +196,7 @@
     const refunds   = [];
 
     for (const sale of sales) {
-      const pHour    = pacificHour(sale.completeTime);
+      const pHour    = dates.pacificHour(sale.completeTime);
       if (clipHour !== null && pHour > clipHour) continue;
 
       const saleTotal = parseFloat(sale.calcTotal) || 0;

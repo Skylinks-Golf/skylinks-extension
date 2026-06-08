@@ -1,18 +1,20 @@
 (function SelectPiReportUI() {
 
-  const token = localStorage.getItem('token');
+  const { escHtml, makeLogger, createModal, apiClient, csv, download, runReport, dates, config } = window.SkylinksUtils;
+  const TOKEN_KEY = config.selectpi.localStorageTokenKey;
+
+  const token = localStorage.getItem(TOKEN_KEY);
   if (!token) {
     alert('Skylinks Tools: No auth token found in localStorage. Make sure you are logged into the SelectPi Portal.');
     return;
   }
 
-  const { escHtml, makeLogger, createModal, apiClient, csv, download, runReport, dates } = window.SkylinksUtils;
   const log = makeLogger('SP Report');
 
   const { monday: defaultStart, sunday: defaultEnd } = dates.weekRangeMonSun();
 
   const api = apiClient({
-    auth: { bearerFromLocalStorage: 'token' },
+    auth: { bearerFromLocalStorage: TOKEN_KEY },
   });
 
   const modal = createModal({

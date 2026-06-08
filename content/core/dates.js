@@ -67,5 +67,16 @@
     return `${+m}/${+day}/${y}`;
   }
 
-  ns.dates = { todayLocal, weekRangeMonSun, addDays, pacificMidnightUTC, pacificDayUTCWindow, formatLongDate, formatShortDate };
+  function formatWeekday(dateStr, style = 'short') {
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: style });
+  }
+
+  function pacificHour(isoStr) {
+    return parseInt(
+      new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', hour: '2-digit', hour12: false }).format(new Date(isoStr)),
+      10
+    );
+  }
+
+  ns.dates = { todayLocal, weekRangeMonSun, addDays, pacificMidnightUTC, pacificDayUTCWindow, formatLongDate, formatShortDate, formatWeekday, pacificHour };
 })();

@@ -1,18 +1,20 @@
 (function SelectPiSnapshotUI() {
 
+  const { escHtml, makeLogger, createModal, apiClient, dates, config, format } = window.SkylinksUtils;
+  const TOKEN_KEY = config.selectpi.localStorageTokenKey;
+
   // 1. Auth check
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem(TOKEN_KEY);
   if (!token) {
     alert('Skylinks Tools: No auth token found in localStorage. Make sure you are logged into the SelectPi Portal.');
     return;
   }
 
-  const { escHtml, makeLogger, createModal, apiClient, dates } = window.SkylinksUtils;
   const log = makeLogger('SP Snapshot');
 
   const todayStr = dates.todayLocal();
 
-  const api = apiClient({ auth: { bearerFromLocalStorage: 'token' } });
+  const api = apiClient({ auth: { bearerFromLocalStorage: TOKEN_KEY } });
   const post = (path, body) => api.post(path, body);
 
   // Inject comprehensive responsive styles for the KPI grid, bucket grid, and mobile card layout.
@@ -93,8 +95,8 @@
   const setProgress = pct => { $('sps-bar').style.width = pct + '%'; };
   const showProgress = () => { $('sps-progress-wrap').style.display = 'block'; setProgress(0); };
   const hideProgress = () => { $('sps-progress-wrap').style.display = 'none'; };
-  const fmtMoney = n => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const fmtNum   = n => Number(n || 0).toLocaleString('en-US');
+  const fmtMoney = format.money;
+  const fmtNum   = format.num;
   const fmtDateLabel = d => dates.formatLongDate(d);
 
   // ── Comparison helpers ───────────────────────────────────────────────────
@@ -108,10 +110,6 @@
     const d = new Date(dateStr + 'T12:00:00');
     d.setFullYear(d.getFullYear() - 1);
     return d.toISOString().slice(0, 10);
-  }
-
-  function shortWeekdayName(dateStr) {
-    return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(dateStr + 'T12:00:00').getDay()];
   }
 
   function extractKPIs(summary, dispensers, byBucket) {
@@ -168,7 +166,7 @@
   async function loadComparisons(date, raw) {
     const gen     = ++state.compGen;
     const current = extractKPIs(raw.summary, raw.dispensers, raw.byBucket);
-    const wday    = shortWeekdayName(date);
+    const wday    = dates.formatWeekday(date);
 
     const [r7, r14, r21, r28, rYr] = await Promise.all([
       fetchComparisonDay(addDaysStr(date, -7)),

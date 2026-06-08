@@ -8,6 +8,7 @@ const CORE_FILES = [
   'content/core/api.js',
   'content/core/paginate.js',
   'content/core/csv.js',
+  'content/core/format.js',
   'content/core/download.js',
   'content/core/copy.js',
   'content/core/table.js',
