@@ -39,8 +39,12 @@
         }
 
         if (parallel) {
-          const pages = await Promise.all(cursors.map(c => fetchPage(c)));
-          for (const page of pages) allItems = allItems.concat(toArr(getItems(page)));
+          const limit = config.maxConcurrent || 6;
+          for (let i = 0; i < cursors.length; i += limit) {
+            const chunk = cursors.slice(i, i + limit);
+            const pages = await Promise.all(chunk.map(c => fetchPage(c)));
+            for (const page of pages) allItems = allItems.concat(toArr(getItems(page)));
+          }
         } else {
           for (const c of cursors) {
             const page = await fetchPage(c);

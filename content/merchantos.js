@@ -39,7 +39,7 @@
   ];
 
   const api = apiClient({
-    baseUrl: `https://us.merchantos.com/API/Account/${ACCOUNT_ID}`,
+    baseUrl: `${config.lightspeed.baseUrl}/API/Account/${ACCOUNT_ID}`,
     auth: 'cookie',
     retry: { attempts: 2, delayMs: 1000, methods: ['GET'] },
   });
