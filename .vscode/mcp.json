@@ -1,4 +1,14 @@
 {
-	"inputs": [],
-	"servers": {}
+  "inputs": [],
+  "servers": {
+    "code-review-graph": {
+      "command": "uvx",
+      "args": [
+        "code-review-graph",
+        "serve"
+      ],
+      "cwd": "C:\\data\\skylinks\\apps\\skylinks-extension",
+      "type": "stdio"
+    }
+  }
 }
