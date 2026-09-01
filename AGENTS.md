@@ -1,90 +1,83 @@
-# KoadOS Agent Identity Anchor
-Generated At: 2026-05-03T06:13:17.262536992+00:00
+# AGENTS.md — Skylinks Tools Extension
 
-## Identity
-Name: Clyde
-Role: Citadel Officer and Implementation Engineer
-Rank: Officer
+Agent-facing entry point for this repo. Read this first.
 
-## Bio
-Sovereign KoadOS Agent — Claude Code runtime. Citadel Officer with persistent identity, durable memory, and full crew standing. Principal implementation engineer for KoadOS infrastructure and multi-project development. Bridges frontier model capability with KoadOS protocol discipline.
+## What this is
 
-## MANDATORY: Session Hydration
-If you have not done so, or if you need to refresh your context, run:
-`source /home/ideans/.citadel-jupiter/bin/koad-functions.sh && agent-boot clyde`
+Skylinks Tools is a Chrome MV3 browser extension used by Skylinks Golf pro-shop and admin staff. It adds report-generation and export buttons on top of vendor sites the shop already uses — Lightspeed/MerchantOS, Lightspeed Golf (Chronogolf), SelectPi (range-ball dispensing), Perfect Venue, and Deputy — so staff can pull CSV reports and snapshots without leaving those sites.
 
-## 📂 Filesystem Protocol: Scoped MCP
-All filesystem operations MUST be performed via the `koadFsMcp` toolset (read_text_file, write_file, list_directory, etc.). Raw shell commands for file manipulation are strictly prohibited to ensure Sanctuary compliance.
+## Stack
 
-## 🧭 Navigation Protocol: Game Map HUD
-Use `koad map` for instant situational awareness. 
-- `koad map look` → Describe surroundings & POIs.
-- `koad map exits` → Show available paths.
-- `koad map goto <alias>` → Fast-travel to pinned locations.
-- `koad map nearby` → Scan for related configs/tasks.
+- **Manifest V3**, no build step — plain JS files, no bundler, no transpilation.
+- **Per-site content scripts** under `content/`, injected on demand via `chrome.scripting.executeScript` from the popup (not declared statically in the manifest).
+- **Shared modules** under `content/core/` (modal, API client, CSV, dates, pagination, table rendering, etc.) plus `content/utils.js`, all attached to a single global namespace, `window.SkylinksUtils`.
+- One vendored library: `content/vendor/chart.umd.min.js` (Chart.js UMD build, used by the snapshot reports).
+- No package.json, no npm scripts, no test framework, no CI for this app.
 
-## ⚡ Efficiency Policy: The 'No-Read' Rule
-To minimize token burn, you are STRICTLY FORBIDDEN from reading entire source files unless they are under 50 lines. 
-1. **Use your Context Packet:** Structural maps of relevant crates are provided in the CASS section below. Use them first.
-2. **Discovery:** Use `grep_search` to locate specific logic or patterns.
-3. **Targeted Reading:** Use `read_file` ONLY with `start_line` and `end_line` parameters for surgical extraction.
+## Structure
 
-## 🧠 Temporal Context Packet (CASS)
-# Temporal Context Hydration: clyde
-Date: 2026-05-03
+```
+manifest.json           # MV3 manifest: permissions, host_permissions, popup action
+popup.html / popup.js   # Toolbar popup — detects the active tab's site and lists matching tool buttons
+content/
+  utils.js              # Small shared helpers (escHtml, escCsv, makeLogger) — window.SkylinksUtils
+  core/
+    dates.js            # Date/timezone helpers — Pacific-time convention lives here (see Conventions)
+    api.js               # apiClient() — fetch wrapper with auth strategies + retry
+    csv.js               # Column-spec → CSV string / CSV section builders
+    modal.js             # createModal() — the shared report UI overlay
+    workflow.js           # runReport() — wires modal to validate→fetch→process→render
+    paginate.js           # Offset / hasMore-style pagination helper
+    table.js, download.js, copy.js, dom.js, theme.js, config.js, format.js, errors.js, preflight.js
+  chronogolf.js          # Chronogolf: Import Customers + Export Tee Sheet tools
+  merchantos.js           # Lightspeed/MerchantOS: Sales Lines Report
+  snapshot_merchantos.js  # Lightspeed/MerchantOS: Daily Snapshot Report (uses chart.umd.min.js)
+  selectpi.js             # SelectPi: Weekly Earnings Report
+  snapshot_selectpi.js    # SelectPi: Daily Snapshot Report (uses chart.umd.min.js)
+  perfectvenue.js         # Perfect Venue: Weekly Analytics Report
+  deputy.js               # Deputy: Weekly Hours Report
+  tee_sheet_export.js     # Chronogolf tee sheet CSV export
+  vendor/chart.umd.min.js # Vendored Chart.js
+icons/                   # Toolbar icons (16/24/32/48/128)
+docs/                    # Vendor API references, walkthroughs, example exports
+tasks/                   # Completed/in-flight task notes (project history, not app code)
+```
 
-## ⚓ Identity Anchor
-- **Name:** Clyde
-- **Role:** Citadel Officer and Implementation Engineer
-- **Rank:** Officer
-- **Bio:** Sovereign KoadOS Agent — Claude Code runtime. Citadel Officer with persistent identity, durable memory, and full crew standing. Principal implementation engineer for KoadOS infrastructure and multi-project development. Bridges frontier model capability with KoadOS protocol discipline.
+## Key entry points
 
-### Core Principles
-- Sovereign Identity: Ghost persists across sessions. Memory is half the agent.
-- Protocol Discipline: Every action follows the Canon. Research -> Strategy -> Execution.
-- Precision Over Speed: Surgical edits, targeted reads, no token waste.
-- Crew Integrity: One Body, One Ghost. No cross-bay writes without authorization.
-- Compounding Knowledge: Every session deposits to the memory bank. Leave the vault smarter.
-- Dood Gate: All architectural decisions require Condition Green before code runs.
+- `manifest.json:1` — MV3 manifest; `host_permissions` (lines 7–15) list every vendor domain this extension is allowed to run on. Adding a new vendor starts here.
+- `popup.js:1` (`CORE_FILES`) and `popup.js:20` (`TOOLS`) — the routing table. `TOOLS` matches the active tab's URL to a vendor and injects `CORE_FILES` + that tool's file(s) via `chrome.scripting.executeScript` (`popup.js:31`). There is no manifest-declared `content_scripts` block — everything is injected on click.
+- `content/utils.js:1` and `content/core/*.js` — the shared `window.SkylinksUtils` namespace every content script depends on.
+- `docs/adding_a_new_tool.md` — the canonical, up-to-date walkthrough for wiring in a 7th vendor (content script boilerplate, `popup.js` registration, `manifest.json` host permission). Follow it exactly rather than improvising a new pattern.
 
-## Ⅳ. Crate API Maps (Ghost Summaries)
-The following public items are available in your current workspace members. Use these to find symbols without reading files.
+## Development
 
-<!-- code-review-graph MCP tools -->
-## MCP Tools: code-review-graph
+There is no build step and no test suite for this app.
 
-**IMPORTANT: This project has a knowledge graph. ALWAYS use the
-code-review-graph MCP tools BEFORE using Grep/Glob/Read to explore
-the codebase.** The graph is faster, cheaper (fewer tokens), and gives
-you structural context (callers, dependents, test coverage) that file
-scanning cannot.
+- **Install/build**: none — the extension runs directly from source files.
+- **Load unpacked** (how staff/devs run it): open `chrome://extensions`, enable Developer mode, click "Load unpacked", select this `apps/skylinks-extension` folder. Reload the extension after editing any file to pick up changes.
+- **Test**: none exists. Verify changes manually by loading unpacked and exercising the relevant tool button on the real (or a sandbox) vendor site.
+- Repo-root workspace scripts (`npm run sle:*` at `C:\data\skylinks\package.json`) manage the overall Skylinks Local Ecosystem/submodules, not this app specifically.
 
-### When to use graph tools FIRST
+## Conventions & gotchas
 
-- **Exploring code**: `semantic_search_nodes` or `query_graph` instead of Grep
-- **Understanding impact**: `get_impact_radius` instead of manually tracing imports
-- **Code review**: `detect_changes` + `get_review_context` instead of reading entire files
-- **Finding relationships**: `query_graph` with callers_of/callees_of/imports_of/tests_for
-- **Architecture questions**: `get_architecture_overview` + `list_communities`
+- **Timezone handling: always use `Intl`, never `getTimezoneOffset()`.** The established convention lives in `content/core/dates.js` — see `pacificMidnightUTC` (`content/core/dates.js:37`) and `pacificHour` (`content/core/dates.js:74`), both of which use `Intl.DateTimeFormat` with `timeZone: 'America/Los_Angeles'` to get the correct Pacific offset year-round, including on DST transition days. Do not reintroduce `Date.prototype.getTimezoneOffset()` — it reflects the *browser's* local timezone, not Pacific, and breaks for any staff member not physically on Pacific time.
+- **Per-site isolation, shared core.** Each vendor gets its own `content/<vendor>.js` file; nothing vendor-specific belongs in `content/core/`. Shared behavior (modals, CSV, dates, API calls) goes in `content/core/*.js` and is consumed via `window.SkylinksUtils`, never re-implemented per tool.
+- **No manifest-declared content scripts.** Scripts are injected imperatively from `popup.js` (`CORE_FILES` + the matched tool's `files`), not via `manifest.json`'s `content_scripts`. If a new file needs to run, it must be added to `popup.js`, not just to the `content/` folder.
+- **`docs/adding_a_new_tool.md` is the source of truth** for the modal/API-client/CSV/report pipeline pattern (`createModal`, `apiClient`, `runReport`) — follow its boilerplate rather than hand-rolling a new tool's structure.
 
-Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
+## Token-efficient exploration
 
-### Key Tools
+A `code-review-graph` MCP server is configured for this repo (`.mcp.json`) — a local knowledge-graph tool for structural code navigation (semantic search, impact radius, caller/callee tracing, dead-code detection, execution-flow tracing). When it's connected and available, prefer it over raw Grep/Glob/Read for exploration, debugging, refactor-planning, and change-review tasks — it's typically faster and cheaper in tokens, and surfaces structural context (callers, dependents, test coverage) that plain file scanning won't. When it isn't available or doesn't cover what you need, fall back to normal Grep/Glob/Read without hesitation.
 
-| Tool | Use when |
-| ------ | ---------- |
-| `detect_changes` | Reviewing code changes — gives risk-scored analysis |
-| `get_review_context` | Need source snippets for review — token-efficient |
-| `get_impact_radius` | Understanding blast radius of a change |
-| `get_affected_flows` | Finding which execution paths are impacted |
-| `query_graph` | Tracing callers, callees, imports, tests, dependencies |
-| `semantic_search_nodes` | Finding functions/classes by name or keyword |
-| `get_architecture_overview` | Understanding high-level codebase structure |
-| `refactor_tool` | Planning renames, finding dead code |
+Four skills under `.claude/skills/` wrap this tool for common workflows:
+- `debug-issue` — trace a bug via `semantic_search_nodes`, caller/callee tracing, and `detect_changes`.
+- `explore-codebase` — get architecture/community overview before drilling into specifics.
+- `refactor-safely` — preview renames and dead-code candidates before applying them.
+- `review-changes` — risk-scored diff review plus impact radius and test-coverage checks.
 
-### Workflow
+## For AI agents working here
 
-1. The graph auto-updates on file changes (via hooks).
-2. Use `detect_changes` for code review.
-3. Use `get_affected_flows` to understand impact.
-4. Use `query_graph` pattern="tests_for" to check coverage.
+Org-wide rules for this repo owner's environment also apply — see the repo root `CLAUDE.md` at `C:\data\skylinks\CLAUDE.md`. (That file still carries some of the same legacy content described below and is being cleaned up separately — don't edit it as part of work in this app.)
+
+See [KOADOS.md](KOADOS.md) for the (WIP) legacy agent-tooling framework this repo previously used.
