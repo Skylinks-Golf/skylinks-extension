@@ -29,7 +29,12 @@
     if (!str) return '';
     const p = str.trim().split('/');
     if (p.length !== 3) return str;
-    const [m, d, y] = p;
+    const [m, d] = p;
+    let y = p[2];
+    if (y.length === 2) {
+      const yy = parseInt(y, 10);
+      y = String(yy <= 30 ? 2000 + yy : 1900 + yy);
+    }
     return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
   }
 
@@ -101,27 +106,44 @@
     return errors;
   }
 
+  // Player type is NOT a customer field — it's set via a separate affiliation
+  // call after create (see attachAffiliation). Address must be nested under
+  // `address` with the server's `postcode` key (not the form's `post_code`).
   function buildPayload(row) {
     const customer = {
       club_id: parseInt(CLUB_ID, 10),
       first_name: row.first_name,
       last_name: row.last_name,
       email: row.email,
-      affiliation_type_ids: [parseInt(row.affiliation_type_id, 10)],
     };
-    if (row.phone) customer.phone = row.phone;
+    if (row.phone) customer.phone = normalizePhone(row.phone);
     if (row.gender) customer.gender = parseInt(row.gender, 10);
     if (row.date_of_birth) customer.date_of_birth = row.date_of_birth;
-    const memberNo = row.member_no || row.ghin;
+    const memberNo = row.ghin || row.member_no;
     if (memberNo) customer.member_no = memberNo;
     if (row.bag_number) customer.bag_number = row.bag_number;
-    if (row.address_one) customer.address_one = row.address_one;
-    if (row.address_two) customer.address_two = row.address_two;
-    if (row.city) customer.city = row.city;
-    if (row.country_code) customer.country_code = row.country_code.toUpperCase();
-    if (row.state_code) customer.state_code = row.state_code;
-    if (row.post_code) customer.post_code = row.post_code;
+
+    const address = buildAddressPatch(row);
+    if (Object.keys(address).length) customer.address = address;
+
     return { customer };
+  }
+
+  // Lightspeed's phone field is digits-only in practice; strip formatting
+  // (parens, dashes, spaces, +) rather than sending it through unchanged.
+  function normalizePhone(phone) {
+    return String(phone).replace(/\D/g, '');
+  }
+
+  function buildAddressPatch(row) {
+    const address = {};
+    if (row.address_one) address.address_one = row.address_one;
+    if (row.address_two) address.address_two = row.address_two;
+    if (row.city) address.city = row.city;
+    if (row.country_code) address.country_code = row.country_code.toUpperCase();
+    if (row.state_code) address.state_code = row.state_code;
+    if (row.post_code) address.postcode = row.post_code;
+    return address;
   }
 
   async function createCustomer(payload) {
@@ -163,6 +185,121 @@
     }
   }
 
+  // Player type = affiliation, set via a separate call (doc §2b/§5). Always use
+  // the type's own default_role rather than guessing 'member'/'public'.
+  async function attachAffiliation(customerId, affiliationTypeId) {
+    const type = affiliationTypesById[affiliationTypeId];
+    const role = type?.default_role || 'public';
+    try {
+      await api.post(`/private_api/organizations/${CLUB_ID}/affiliations`, {
+        affiliation: {
+          affiliation_type_id: affiliationTypeId,
+          role,
+          organization_id: parseInt(CLUB_ID, 10),
+          provider_id: parseInt(CLUB_ID, 10),
+          user_id: customerId,
+        },
+      });
+      return { success: true };
+    } catch (e) {
+      log('Affiliation attach failed:', e.message);
+      return { success: false, message: e.message };
+    }
+  }
+
+  // Existing customer (matched by email): read-modify-write the profile (doc §3a —
+  // round-trip the full object, only patch fields this row actually supplies so we
+  // never blank out data staff entered manually), then update the player type via
+  // the affiliation endpoint (§3b) if it differs and isn't subscription-locked.
+  async function updateExistingCustomer(customerId, row) {
+    let customer;
+    try {
+      customer = await api.get(`/private_api/clubs/${CLUB_ID}/customers/${customerId}`, { query: { club_id: CLUB_ID } });
+    } catch (e) {
+      return { success: false, message: `Could not read existing customer: ${e.message}` };
+    }
+
+    if (row.phone) customer.phone = normalizePhone(row.phone);
+    if (row.gender) customer.gender = parseInt(row.gender, 10);
+    if (row.date_of_birth) customer.date_of_birth = row.date_of_birth;
+    const memberNo = row.ghin || row.member_no;
+    if (memberNo) customer.member_no = memberNo;
+    if (row.bag_number) customer.bag_number = row.bag_number;
+
+    const addressPatch = buildAddressPatch(row);
+    if (Object.keys(addressPatch).length) {
+      customer.address = { ...(customer.address || {}), ...addressPatch };
+    }
+
+    try {
+      await api.put(`/private_api/clubs/${CLUB_ID}/customers/${customerId}`, { customer });
+    } catch (e) {
+      return { success: false, message: `Profile update failed: ${e.message}` };
+    }
+
+    const desiredTypeId = row.affiliation_type_id ? parseInt(row.affiliation_type_id, 10) : null;
+    if (!desiredTypeId) return { success: true, playerTypeUpdated: false };
+
+    if (customer.player_type_locked_by_subscription) {
+      return { success: true, playerTypeUpdated: false, playerTypeNote: 'locked by subscription' };
+    }
+
+    const current = customer.current_affiliation;
+    if (current && current.affiliation_type_id === desiredTypeId) {
+      return { success: true, playerTypeUpdated: false };
+    }
+
+    const type = affiliationTypesById[desiredTypeId];
+    const role = type?.default_role || 'public';
+
+    try {
+      if (current) {
+        const affiliation = {
+          id: current.id,
+          role,
+          organization_id: parseInt(CLUB_ID, 10),
+          provider_id: parseInt(CLUB_ID, 10),
+          affiliation_type_id: desiredTypeId,
+          user_id: customerId,
+        };
+        if (orgInfo) {
+          affiliation.owner = { id: orgInfo.id, name: orgInfo.name, type: 'Club' };
+          affiliation.provider = { id: orgInfo.id, name: orgInfo.name, type: 'Club' };
+        }
+        await api.put(`/private_api/affiliations/${current.id}`, { affiliation });
+      } else {
+        await api.post(`/private_api/organizations/${CLUB_ID}/affiliations`, {
+          affiliation: {
+            affiliation_type_id: desiredTypeId,
+            role,
+            organization_id: parseInt(CLUB_ID, 10),
+            provider_id: parseInt(CLUB_ID, 10),
+            user_id: customerId,
+          },
+        });
+      }
+      return { success: true, playerTypeUpdated: true };
+    } catch (e) {
+      log('Affiliation update failed:', e.message);
+      return { success: true, playerTypeUpdated: false, playerTypeNote: e.message };
+    }
+  }
+
+  // Exact-match lookup (doc §1a) — used when a create attempt comes back
+  // "already a customer" because our in-memory index was built before this
+  // session created/found that customer.
+  async function findCustomerIdByEmail(email) {
+    try {
+      const q = `((user.email:${email}))`;
+      const hits = await api.get(`/private_api/clubs/${CLUB_ID}/customers`, { query: { club_id: CLUB_ID, page: 1, q } });
+      const match = Array.isArray(hits) ? hits.find(c => c.email?.toLowerCase() === email.toLowerCase()) : null;
+      return match ? match.id : null;
+    } catch (e) {
+      log('Customer lookup by email failed:', e.message);
+      return null;
+    }
+  }
+
   const BODY_HTML = `
     <div id="cg-aff-section" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#475569;">
       Loading affiliation types…
@@ -183,17 +320,19 @@
     id: 'cg-import',
     title: 'Customer Import',
     emoji: '👥',
-    description: `Upload a CSV to batch-create customers in Lightspeed Golf (Club ${CLUB_ID}). SGC Topsheet format (First Name, Last Name, Email, Membership Tier, …) is auto-detected. API format: required columns first_name, last_name, email, affiliation_type_id.`,
+    description: `Upload a CSV to batch-create or update customers in Lightspeed Golf (Club ${CLUB_ID}). Rows matching an existing email update that customer instead of skipping it. SGC Topsheet format (First Name, Last Name, Email, Membership Tier, …) is auto-detected. API format: required columns first_name, last_name, email, affiliation_type_id.`,
     body: BODY_HTML,
     runLabel: null,
   });
 
   const $ = id => document.getElementById(id);
 
-  // ── Init: load affiliation types + existing emails concurrently ─────────────
+  // ── Init: load affiliation types + existing customers concurrently ──────────
 
-  let existingEmails = null;       // null=loading, Set=ready, false=unavailable
-  let affiliationTypesByName = {}; // lowercase name → id, for Topsheet format resolution
+  let existingCustomersByEmail = null; // null=loading, Map<email,id>=ready, false=unavailable
+  let affiliationTypesByName = {};     // lowercase name → id, for Topsheet format resolution
+  let affiliationTypesById = {};       // id → full type object (need default_role for writes)
+  let orgInfo = null;                  // {id, name}, used to fill owner/provider on affiliation PUTs
   let parsedRows = null;
 
   async function loadAffiliationTypes() {
@@ -206,6 +345,7 @@
       types.forEach(t => {
         const name = (t.name || t.label || '').toLowerCase().trim();
         if (name) affiliationTypesByName[name] = t.id;
+        affiliationTypesById[t.id] = t;
       });
       let html = '<strong style="color:#262b2f;">Affiliation Types</strong><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">';
       types.forEach(t => {
@@ -220,7 +360,7 @@
     }
   }
 
-  async function loadExistingEmails() {
+  async function loadExistingCustomers() {
     try {
       const customers = await paginate({
         fetchPage: cur => api.get(`/private_api/clubs/${CLUB_ID}/customers?page=${cur}&per_page=100`),
@@ -229,16 +369,28 @@
         hasMore: (_, items) => items.length === 100,
         nextCursor: cur => cur + 1,
       });
-      existingEmails = new Set(customers.map(c => c.email?.toLowerCase()).filter(Boolean));
-      log(`Indexed ${existingEmails.size} existing customer email(s).`);
+      existingCustomersByEmail = new Map(
+        customers.filter(c => c.email).map(c => [c.email.toLowerCase(), c.id])
+      );
+      log(`Indexed ${existingCustomersByEmail.size} existing customer(s).`);
     } catch (e) {
-      existingEmails = false;
-      log('Existing email pre-load failed:', e.message);
+      existingCustomersByEmail = false;
+      log('Existing customer pre-load failed:', e.message);
+    }
+  }
+
+  async function loadOrgInfo() {
+    try {
+      const org = await api.get(`/private_api/organizations/${CLUB_ID}`);
+      orgInfo = { id: org.id, name: org.name };
+    } catch (e) {
+      log('Org info fetch failed (affiliation updates will omit owner/provider):', e.message);
     }
   }
 
   loadAffiliationTypes();
-  loadExistingEmails();
+  loadExistingCustomers();
+  loadOrgInfo();
 
   // ── File handling ───────────────────────────────────────────────────────────
 
@@ -262,14 +414,39 @@
         return;
       }
 
+      const DOB_RE = /^\d{4}-\d{2}-\d{2}$/;
+      const todayISO = new Date().toISOString().slice(0, 10);
+      const oldestSaneISO = `${new Date().getFullYear() - 100}-01-01`;
+
       const issues = [];
+      let invalidCount = 0;
       parsedRows.forEach(row => {
         const errs = validateRow(row);
-        if (errs.length) issues.push({ type: 'warn', msg: `Row ${row._lineNumber}: ${errs.join(', ')}` });
+        if (errs.length) {
+          invalidCount++;
+          issues.push({ type: 'warn', msg: `Row ${row._lineNumber}: ${errs.join(', ')}` });
+        }
+        if (row.date_of_birth && !DOB_RE.test(row.date_of_birth)) {
+          issues.push({ type: 'warn', msg: `Row ${row._lineNumber}: birthdate "${row.date_of_birth}" isn't a valid date — it will likely be rejected or dropped.` });
+        } else if (row.date_of_birth && (row.date_of_birth > todayISO || row.date_of_birth < oldestSaneISO)) {
+          issues.push({ type: 'warn', msg: `Row ${row._lineNumber}: birthdate ${row.date_of_birth} looks wrong (future-dated or 100+ years ago) — verify the source data.` });
+        }
+        if (row.ghin && row.member_no && row.ghin !== row.member_no) {
+          issues.push({ type: 'warn', msg: `Row ${row._lineNumber}: GHIN "${row.ghin}" and member_no "${row.member_no}" disagree — GHIN will be used as the member number.` });
+        }
+        if (row.phone) {
+          const digits = row.phone.replace(/\D/g, '');
+          if (digits !== row.phone) {
+            issues.push({ type: 'ok', msg: `Row ${row._lineNumber}: phone "${row.phone}" will be sent as "${digits}" (formatting stripped).` });
+          }
+          if (digits.length < 7 || digits.length > 15) {
+            issues.push({ type: 'warn', msg: `Row ${row._lineNumber}: phone "${row.phone}" has ${digits.length} digits after stripping — looks wrong, verify the source data.` });
+          }
+        }
       });
 
-      const validCount = parsedRows.length - issues.length;
-      const summary = { type: issues.length ? 'warn' : 'ok', msg: `${parsedRows.length} rows parsed — ${validCount} valid, ${issues.length} will be skipped.` };
+      const validCount = parsedRows.length - invalidCount;
+      const summary = { type: issues.length ? 'warn' : 'ok', msg: `${parsedRows.length} rows parsed — ${validCount} valid, ${invalidCount} will be skipped.` };
       showPreflight([summary, ...issues]);
 
       $('cg-run').disabled = false;
@@ -328,7 +505,21 @@
     modal.setProgress(0);
     log(`Starting import of ${parsedRows.length} rows for club ${CLUB_ID}`);
 
-    const results = { created: [], skipped: [], failed: [] };
+    const results = { created: [], updated: [], skipped: [], failed: [] };
+
+    async function handleUpdate(existingId, row, name) {
+      const result = await updateExistingCustomer(existingId, row);
+      if (result.success) {
+        const note = result.playerTypeUpdated === false && row.affiliation_type_id
+          ? (result.playerTypeNote ? `player type not updated: ${result.playerTypeNote}` : '')
+          : '';
+        log(`UPDATED row ${row._lineNumber} (${name}) → ID: ${existingId}${note ? ' — ' + note : ''}`);
+        results.updated.push({ row: row._lineNumber, name, id: existingId, note });
+      } else {
+        log(`FAILED (update) row ${row._lineNumber} (${name}) → ${result.message}`);
+        results.failed.push({ row: row._lineNumber, name, error: result.message });
+      }
+    }
 
     const validRows = [];
     parsedRows.forEach(row => {
@@ -349,21 +540,37 @@
 
         await Promise.all(batch.map(async row => {
           const name = `${row.first_name} ${row.last_name}`;
+          const emailKey = row.email.toLowerCase();
 
-          if (existingEmails instanceof Set && existingEmails.has(row.email.toLowerCase())) {
-            log(`SKIPPED (duplicate) row ${row._lineNumber} (${name})`);
-            results.skipped.push({ row: row._lineNumber, name, reason: 'email already exists' });
+          if (existingCustomersByEmail instanceof Map && existingCustomersByEmail.has(emailKey)) {
+            await handleUpdate(existingCustomersByEmail.get(emailKey), row, name);
             return;
           }
 
-          const result = await createCustomer(buildPayload(row));
-          if (result.success) {
-            log(`CREATED row ${row._lineNumber} (${name}) → ID: ${result.id}`);
-            results.created.push({ row: row._lineNumber, name, id: result.id, ref: result.ref });
-          } else {
-            log(`FAILED row ${row._lineNumber} (${name}) → ${result.status}: ${result.message}`);
-            results.failed.push({ row: row._lineNumber, name, error: result.message });
+          const created = await createCustomer(buildPayload(row));
+          if (!created.success) {
+            const isDuplicate = created.status === 422 && /already/i.test(created.message || '');
+            if (isDuplicate) {
+              const foundId = await findCustomerIdByEmail(row.email);
+              if (foundId) {
+                if (existingCustomersByEmail instanceof Map) existingCustomersByEmail.set(emailKey, foundId);
+                log(`Row ${row._lineNumber} (${name}) already exists (stale cache) — updating ID ${foundId} instead.`);
+                await handleUpdate(foundId, row, name);
+                return;
+              }
+            }
+            log(`FAILED row ${row._lineNumber} (${name}) → ${created.status}: ${created.message}`);
+            results.failed.push({ row: row._lineNumber, name, error: created.message });
+            return;
           }
+
+          let note = '';
+          if (row.affiliation_type_id) {
+            const attach = await attachAffiliation(created.id, parseInt(row.affiliation_type_id, 10));
+            if (!attach.success) note = `player type not set: ${attach.message}`;
+          }
+          log(`CREATED row ${row._lineNumber} (${name}) → ID: ${created.id}${note ? ' — ' + note : ''}`);
+          results.created.push({ row: row._lineNumber, name, id: created.id, ref: created.ref, note });
         }));
 
         if (i + BATCH_SIZE < validRows.length) await dom.sleep(BATCH_DELAY_MS);
@@ -377,14 +584,15 @@
 
     modal.setProgress(100);
     modal.setStatus(
-      `Done — ${results.created.length} created, ${results.skipped.length} skipped, ${results.failed.length} failed.`,
+      `Done — ${results.created.length} created, ${results.updated.length} updated, ${results.skipped.length} skipped, ${results.failed.length} failed.`,
       results.failed.length > 0 ? 'error' : 'success'
     );
-    log(`Import complete. Created: ${results.created.length}, Skipped: ${results.skipped.length}, Failed: ${results.failed.length}`);
+    log(`Import complete. Created: ${results.created.length}, Updated: ${results.updated.length}, Skipped: ${results.skipped.length}, Failed: ${results.failed.length}`);
 
     // Results CSV + table
     const allResultRows = [
-      ...results.created.map(r => ({ ...r, status: 'Created', error: '' })),
+      ...results.created.map(r => ({ row: r.row, name: r.name, id: r.id, ref: r.ref, status: r.note ? 'Created ⚠' : 'Created', error: r.note || '' })),
+      ...results.updated.map(r => ({ row: r.row, name: r.name, id: r.id, ref: '', status: r.note ? 'Updated ⚠' : 'Updated', error: r.note || '' })),
       ...results.skipped.map(r => ({ row: r.row, name: r.name, id: '', ref: '', status: 'Skipped', error: r.reason })),
       ...results.failed.map(r =>  ({ row: r.row, name: r.name, id: '', ref: '', status: 'Failed',  error: r.error })),
     ].sort((a, b) => a.row - b.row);
@@ -400,7 +608,7 @@
     const fname = 'import_results_' + new Date().toISOString().slice(0, 10) + '.csv';
     const dlBtn = download.csvButton({ csv: csv.toCSV(allResultRows, RESULT_COLS), filename: fname });
 
-    const statusStyle = s => s === 'Created' ? 'color:#16a34a;font-weight:600;' : s === 'Failed' ? 'color:#dc2626;font-weight:600;' : 'color:#92400e;font-weight:600;';
+    const statusStyle = s => s.startsWith('Created') ? 'color:#16a34a;font-weight:600;' : s.startsWith('Updated') ? 'color:#2563eb;font-weight:600;' : s === 'Failed' ? 'color:#dc2626;font-weight:600;' : 'color:#92400e;font-weight:600;';
     let tbl = `<table style="width:100%;border-collapse:collapse;margin-top:4px;">
       <thead><tr>
         <th style="${TH}text-align:left;">Row</th>

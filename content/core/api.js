@@ -77,6 +77,12 @@
         return resp.json();
       },
 
+      async put(path, body, { headers = {}, retry } = {}) {
+        const url = buildUrl(path);
+        const resp = await fetchWithRetry('PUT', url, body, headers, retry);
+        return resp.json();
+      },
+
       async graphql(path, { query, variables = {}, operationName } = {}) {
         const url = buildUrl(path);
         const resp = await fetchWithRetry('POST', url, { query, variables, operationName }, {});
