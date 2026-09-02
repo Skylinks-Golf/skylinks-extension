@@ -1,6 +1,5 @@
 {
-  "inputs": [],
-  "servers": {
+  "mcpServers": {
     "code-review-graph": {
       "command": "uvx",
       "args": [
@@ -8,7 +7,8 @@
         "serve"
       ],
       "cwd": "C:\\data\\skylinks\\apps\\skylinks-extension",
-      "type": "stdio"
+      "type": "stdio",
+      "env": []
     }
   }
 }

@@ -1,6 +1,5 @@
 {
-  "inputs": [],
-  "servers": {
+  "mcpServers": {
     "code-review-graph": {
       "command": "uvx",
       "args": [
