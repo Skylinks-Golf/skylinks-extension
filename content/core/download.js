@@ -2,9 +2,10 @@
   const ns = window.SkylinksUtils = window.SkylinksUtils || {};
   const theme = ns.theme;
 
-  function csvButton({ csv, filename, label }) {
+  // bom: prepend a UTF-8 byte-order mark so Excel opens accented names correctly.
+  function csvButton({ csv, filename, label, bom = false }) {
     const displayLabel = label || filename;
-    const blobUrl = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    const blobUrl = URL.createObjectURL(new Blob([bom ? '\uFEFF' + csv : csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
     a.textContent = displayLabel;
     a.href = blobUrl;

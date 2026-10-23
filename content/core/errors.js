@@ -22,7 +22,31 @@
     }
   }
 
-  function parseHttpError(resp, method, url) {
+  // Pull a human-readable reason out of an error response body. Handles the
+  // shapes seen across vendors: {errors:[{message}]}, {errors:{field:[msg]}},
+  // {errors:'msg'}, {error:{message}}, {error:'msg'}, {message}. Falls back to
+  // a trimmed slice of the raw text.
+  function extractErrorMessage(text) {
+    if (!text) return '';
+    let data;
+    try { data = JSON.parse(text); } catch (_) { return String(text).trim().slice(0, 200); }
+    const errs = data?.errors;
+    if (Array.isArray(errs)) {
+      return errs.map(e => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ');
+    }
+    if (errs && typeof errs === 'object') {
+      return Object.entries(errs)
+        .map(([field, v]) => `${field} ${Array.isArray(v) ? v.join(', ') : v}`)
+        .join('; ');
+    }
+    if (typeof errs === 'string') return errs;
+    if (typeof data?.error === 'string') return data.error;
+    if (data?.error?.message) return data.error.message;
+    if (data?.message) return data.message;
+    return String(text).trim().slice(0, 200);
+  }
+
+  function parseHttpError(resp, method, url, bodyMsg = '') {
     const s = resp.status;
     let code = ErrorCode.HTTP;
     let message;
@@ -36,13 +60,13 @@
     } else if (s >= 500) {
       message = `Server error (${s}). Please try again.`;
     } else {
-      message = `Request failed (${s}).`;
+      message = bodyMsg ? `Request failed (${s}): ${bodyMsg}` : `Request failed (${s}).`;
     }
 
     return new SkylinksError({
       code,
       message,
-      detail: `${method} ${url} → ${s} ${resp.statusText}`,
+      detail: `${method} ${url} → ${s} ${resp.statusText}${bodyMsg ? ' — ' + bodyMsg : ''}`,
       status: s,
     });
   }
@@ -58,5 +82,6 @@
   ns.SkylinksError  = SkylinksError;
   ns.ErrorCode      = ErrorCode;
   ns.parseHttpError = parseHttpError;
+  ns.extractErrorMessage = extractErrorMessage;
   ns.parseNetworkError = parseNetworkError;
 })();

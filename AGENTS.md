@@ -4,7 +4,7 @@ Agent-facing entry point for this repo. Read this first.
 
 ## What this is
 
-Skylinks Tools is a Chrome MV3 browser extension used by Skylinks Golf pro-shop and admin staff. It adds report-generation and export buttons on top of vendor sites the shop already uses — Lightspeed/MerchantOS, Lightspeed Golf (Chronogolf), SelectPi (range-ball dispensing), Perfect Venue, and Deputy — so staff can pull CSV reports and snapshots without leaving those sites.
+Skylinks Tools is a Chrome MV3 browser extension used by Skylinks Golf pro-shop and admin staff. It adds report-generation and export buttons on top of vendor sites the shop already uses — Lightspeed/MerchantOS, Lightspeed Golf (Chronogolf), SelectPi (range-ball dispensing), Perfect Venue, Deputy, and Stripe — so staff can pull CSV reports and snapshots without leaving those sites.
 
 ## Stack
 
@@ -36,6 +36,7 @@ content/
   snapshot_selectpi.js    # SelectPi: Daily Snapshot Report (uses chart.umd.min.js)
   perfectvenue.js         # Perfect Venue: Weekly Analytics Report
   deputy.js               # Deputy: Weekly Hours Report
+  stripe.js               # Stripe: Save Stripe Report (pastes CSV from the skylinks-stripe-app Stripe App; no API calls)
   tee_sheet_export.js     # Chronogolf tee sheet CSV export
   vendor/chart.umd.min.js # Vendored Chart.js
 icons/                   # Toolbar icons (16/24/32/48/128)
