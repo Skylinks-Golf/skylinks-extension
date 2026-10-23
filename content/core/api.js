@@ -41,7 +41,12 @@
       } catch (err) {
         throw ns.parseNetworkError(err, method, url);
       }
-      if (!resp.ok) throw ns.parseHttpError(resp, method, url);
+      if (!resp.ok) {
+        // Read the body so 4xx reasons (e.g. a 422's validation message) reach
+        // the UI instead of a bare "Request failed (422)."
+        const text = await resp.text().catch(() => '');
+        throw ns.parseHttpError(resp, method, url, ns.extractErrorMessage(text));
+      }
       return resp;
     }
 

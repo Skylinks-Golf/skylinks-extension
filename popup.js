@@ -27,6 +27,7 @@ const TOOLS = [
   { match: url => url.includes('portal.getselectpi.com'), label: 'Weekly Earnings Report', color: 'btn-purple', files: ['content/selectpi.js'] },
   { match: url => url.includes('app.perfectvenue.com'), label: 'Weekly Analytics Report', color: 'btn-orange', files: ['content/perfectvenue.js'] },
   { match: url => url.includes('348a3926020407.na.deputy.com'), label: 'Weekly Hours Report', color: 'btn-teal', files: ['content/deputy.js'] },
+  { match: url => url.includes('dashboard.stripe.com'), label: 'Save Stripe Report', color: 'btn-blue', files: ['content/stripe.js'] },
 ];
 
 chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
@@ -48,7 +49,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
   } else {
     const msg = document.createElement('div');
     msg.className = 'error';
-    msg.textContent = 'Navigate to Lightspeed Retail, Lightspeed Golf, the SelectPi Portal, Perfect Venue, or Deputy to use these tools.';
+    msg.textContent = 'Navigate to Lightspeed Retail, Lightspeed Golf, the SelectPi Portal, Perfect Venue, Deputy, or Stripe to use these tools.';
     body.appendChild(msg);
   }
 
