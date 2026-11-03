@@ -1,0 +1,3 @@
+Transaction ID,Date,Item Name,Category,Payment Method,Quantity,Unit Price,Subtotal,Discount Amount,Tax Amount,Line Total,Customer Name,Discount Name
+1001,2026-04-23,Sample Item,Apparel,Visa,1,25.00,25.00,0.00,2.06,27.06,Jane Sample,
+1002,2026-04-23,Range Balls,Range,Cash,2,10.00,20.00,0.00,1.65,21.65,,

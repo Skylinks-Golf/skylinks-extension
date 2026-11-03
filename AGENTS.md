@@ -1,10 +1,19 @@
-# AGENTS.md — Skylinks Tools Extension
+# AGENTS.md — Skylinks Extension Repo
 
 Agent-facing entry point for this repo. Read this first.
 
+## This repo is the home for Skylinks browser tools and shared Artifacts
+
+- **Chrome extension** lives in `extension/`. This is the **only** Skylinks Chrome extension. Add new browser tools here (as a per-site content script plus a `popup.js` entry); do not start or maintain a separate extension elsewhere.
+- **Shared claude.ai Artifacts** live in `artifacts/`. See `artifacts/README.md`.
+- Everyone (admins, LC, Ian, and their agents) works on a `<initials>/<topic>` branch and opens a PR. Never push to `main`; agents commit or push only when asked.
+- Never commit secrets, card data, payroll, or customer/member PII, including "example" exports. Use synthetic sample data.
+
+Paths below are relative to `extension/` unless they start with `artifacts/`.
+
 ## What this is
 
-Skylinks Tools is a Chrome MV3 browser extension used by Skylinks Golf pro-shop and admin staff. It adds report-generation and export buttons on top of vendor sites the shop already uses — Lightspeed/MerchantOS, Lightspeed Golf (Chronogolf), SelectPi (range-ball dispensing), Perfect Venue, and Deputy — so staff can pull CSV reports and snapshots without leaving those sites.
+Skylinks Tools is a Chrome MV3 browser extension used by Skylinks Golf pro-shop and admin staff. It adds report-generation and export buttons on top of vendor sites the shop already uses — Lightspeed/MerchantOS, Lightspeed Golf (Chronogolf), SelectPi (range-ball dispensing), Perfect Venue, Deputy, and Stripe — so staff can pull CSV reports and snapshots without leaving those sites.
 
 ## Stack
 
@@ -36,10 +45,11 @@ content/
   snapshot_selectpi.js    # SelectPi: Daily Snapshot Report (uses chart.umd.min.js)
   perfectvenue.js         # Perfect Venue: Weekly Analytics Report
   deputy.js               # Deputy: Weekly Hours Report
+  stripe.js               # Stripe: Save Stripe Report (pastes CSV from the skylinks-stripe-app Stripe App; no API calls)
   tee_sheet_export.js     # Chronogolf tee sheet CSV export
   vendor/chart.umd.min.js # Vendored Chart.js
 icons/                   # Toolbar icons (16/24/32/48/128)
-docs/                    # Vendor API references, walkthroughs, example exports
+docs/                    # Vendor API references and walkthroughs (no real data)
 tasks/                   # Completed/in-flight task notes (project history, not app code)
 ```
 
@@ -55,7 +65,7 @@ tasks/                   # Completed/in-flight task notes (project history, not 
 There is no build step and no test suite for this app.
 
 - **Install/build**: none — the extension runs directly from source files.
-- **Load unpacked** (how staff/devs run it): open `chrome://extensions`, enable Developer mode, click "Load unpacked", select this `apps/skylinks-extension` folder. Reload the extension after editing any file to pick up changes.
+- **Load unpacked** (how staff/devs run it): open `chrome://extensions`, enable Developer mode, click "Load unpacked", select the `extension/` folder of this repo. Reload the extension after editing any file to pick up changes.
 - **Test**: none exists. Verify changes manually by loading unpacked and exercising the relevant tool button on the real (or a sandbox) vendor site.
 - Repo-root workspace scripts (`npm run sle:*` at `C:\data\skylinks\package.json`) manage the overall Skylinks Local Ecosystem/submodules, not this app specifically.
 
@@ -76,8 +86,10 @@ Four skills under `.claude/skills/` wrap this tool for common workflows:
 - `refactor-safely` — preview renames and dead-code candidates before applying them.
 - `review-changes` — risk-scored diff review plus impact radius and test-coverage checks.
 
+## Shared artifacts (`artifacts/`)
+
+This repo also holds the team's shared claude.ai Artifacts, one folder per artifact at `artifacts/<slug>/`, each with `index.html` and `README.md`. These pages are not loaded by the extension and are not injected by `popup.js`. Before building or updating an artifact, read `artifacts/README.md`. Its rules: the repo file is the source and the Artifact is published from that file; work on a `<initials>/<slug>-<change>` branch and open a PR; never commit secrets, card data, payroll or customer PII.
+
 ## For AI agents working here
 
-Org-wide rules for this repo owner's environment also apply — see the repo root `CLAUDE.md` at `C:\data\skylinks\CLAUDE.md`. (That file still carries some of the same legacy content described below and is being cleaned up separately — don't edit it as part of work in this app.)
-
-See [KOADOS.md](KOADOS.md) for the (WIP) legacy agent-tooling framework this repo previously used.
+Skylinks org instructions also apply. This repo's guidance is this file; `CLAUDE.md` just points here. Other agent tools (Gemini, Cursor, etc.) are no longer configured in this repo; use this file as the shared source.
