@@ -1,0 +1,287 @@
+<title>Pro Shop Order Run</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: black band header + gold rule, tabbed working sections; square corners, gold accents only (Skylinks house style) */
+:root{
+  --bg:#ffffff; --surface:#f6f5f2; --line:#e3e0d8; --fg:#141414; --muted:#6b675f;
+  --band:#000000; --band-fg:#ffffff; --gold:#eeb02b; --gold-ink:#8a6200;
+  --good:#2f7d4f; --warn:#b26a00; --bad:#b3362c; --chip:#f1ede3;
+  --f-display:'Montserrat',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-body:'Montserrat',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121212; --surface:#1b1b1a; --line:#2f2e2b; --fg:#f1efe9; --muted:#a39f95;
+  --band:#000000; --band-fg:#ffffff; --gold:#eeb02b; --gold-ink:#eeb02b;
+  --good:#6cc191; --warn:#e7a43b; --bad:#f07a6f; --chip:#26251f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121212; --surface:#1b1b1a; --line:#2f2e2b; --fg:#f1efe9; --muted:#a39f95;
+  --band:#000000; --band-fg:#ffffff; --gold:#eeb02b; --gold-ink:#eeb02b;
+  --good:#6cc191; --warn:#e7a43b; --bad:#f07a6f; --chip:#26251f; color-scheme:dark}
+*{box-sizing:border-box;border-radius:0}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.band{background:var(--band);color:var(--band-fg);border-bottom:6px solid var(--gold)}
+header.band .wrap{padding-block:22px 18px;display:flex;flex-wrap:wrap;gap:12px 32px;align-items:flex-end;justify-content:space-between}
+.brand{font-weight:800;letter-spacing:.18em;font-size:12px;text-transform:uppercase;color:var(--gold)}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(24px,4vw,34px);margin:4px 0 0;text-wrap:balance;letter-spacing:-.01em}
+.meta{font-size:12px;color:#cfcfcf;display:grid;gap:2px;text-align:right}
+.meta b{color:#fff;font-weight:600}
+.test{background:var(--surface);border-bottom:1px solid var(--line)}
+.test .wrap{padding-block:12px;display:flex;gap:12px;align-items:flex-start;font-size:13px}
+.tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:3px 7px;background:var(--gold);color:#000;white-space:nowrap}
+.steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;border:1px solid var(--line);margin:22px 0 8px}
+.step{padding:12px 14px;border-right:1px solid var(--line);min-width:0}
+.step:last-child{border-right:0}
+.step .n{font-family:var(--f-mono);font-size:11px;color:var(--gold-ink);font-weight:600}
+.step .t{font-weight:700;font-size:13px;margin:2px 0}
+.step .d{font-size:12px;color:var(--muted)}
+@media (max-width:860px){.steps{grid-template-columns:repeat(2,minmax(0,1fr))}.step{border-bottom:1px solid var(--line)}.step:nth-child(2n){border-right:0}}
+nav.tabs{display:flex;gap:0;border-bottom:2px solid var(--fg);margin-top:22px;overflow-x:auto}
+nav.tabs button{font:600 13px var(--f-body);padding:10px 16px;background:transparent;color:var(--muted);border:0;border-bottom:4px solid transparent;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--gold)}
+nav.tabs button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+section.panel{padding-block:22px 48px}
+h2{font-weight:800;font-size:20px;margin:0 0 4px;text-wrap:balance}
+h3{font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.08em;margin:0 0 10px}
+.lede{color:var(--muted);max-width:72ch;margin:0 0 18px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--line);border-top:4px solid var(--gold)}
+.kpi{padding:16px;border-right:1px solid var(--line);min-width:0}
+.kpi:last-child{border-right:0}
+.kpi .l{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.kpi .v{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:4px}
+.kpi .s{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.delta.up{color:var(--good)}.delta.down{color:var(--bad)}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi:nth-child(2n){border-right:0}.kpi{border-bottom:1px solid var(--line)}}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;margin-top:28px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;margin-top:28px}
+@media (max-width:1000px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.grid2,.grid4{grid-template-columns:1fr}}
+.grid2>*,.grid4>*{min-width:0}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line)}
+table{width:100%;font-size:13px;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:left;padding:8px 10px;background:var(--surface);color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;white-space:nowrap}
+td.item{min-width:220px}
+ol.top{list-style:none;margin:0;padding:0;border-top:2px solid var(--fg)}
+ol.top li{display:grid;grid-template-columns:1.6em minmax(0,1fr) auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+ol.top .rk{font-family:var(--f-mono);font-size:11px;color:var(--gold-ink);padding-top:2px}
+ol.top .q{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+.bars{display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr) 7.5em;gap:10px;align-items:center;font-size:13px}
+.bar .track{height:14px;background:var(--surface);border:1px solid var(--line);position:relative}
+.bar .fill{position:absolute;inset:0 auto 0 0;background:var(--gold)}
+.bar .val{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 16px}
+.chip{font:600 12px var(--f-body);padding:6px 10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn{font:700 12px var(--f-body);letter-spacing:.04em;padding:7px 12px;border:1px solid var(--fg);background:var(--fg);color:var(--bg);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--fg)}
+.btn.go{background:var(--gold);border-color:var(--gold);color:#000}
+.btn.sm{padding:4px 8px;font-size:11px}
+a.btn{text-decoration:none;display:inline-block}
+.pill.m-portal{color:var(--good)}.pill.m-email{color:var(--gold-ink)}.pill.m-store{color:var(--muted)}.pill.m-none{color:var(--bad)}
+.vendor.done{opacity:.6}
+.placed{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
+.emailbox{padding:12px 14px;border-bottom:1px solid var(--line);display:grid;gap:8px}
+.emf{display:grid;grid-template-columns:5em minmax(0,1fr) auto;gap:10px;align-items:center;font-size:13px}
+.emf .lab{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+textarea.embody{width:100%;min-height:200px;font:12px/1.5 var(--f-mono);background:var(--surface);color:var(--fg);border:1px solid var(--line);padding:10px}
+.emfoot{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.vendor{border:1px solid var(--line);margin-bottom:22px}
+.vhead{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface);border-bottom:1px solid var(--line);border-left:6px solid var(--gold)}
+.vname{font-weight:800;font-size:16px}
+.vsub{font-size:12px;color:var(--muted)}
+.vsum{font-size:12px;font-variant-numeric:tabular-nums}
+.vact{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border:1px solid currentColor;white-space:nowrap}
+.pill.par{color:var(--good)}.pill.rep{color:var(--warn)}.pill.a{color:var(--gold-ink)}
+input.qty{width:4.5em;font:600 13px var(--f-mono);padding:4px 6px;border:1px solid var(--line);background:var(--bg);color:var(--fg);text-align:right}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--gold)}
+tr.ok td{background:color-mix(in srgb,var(--gold) 12%,transparent)}
+.neg{color:var(--bad)}
+.note{font-size:12px;color:var(--muted)}
+.callout{border-left:6px solid var(--gold);background:var(--surface);padding:12px 14px;margin:0 0 18px;font-size:13px}
+.ideas{display:grid;gap:28px}
+.idea-h{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px}
+.why{font-size:12px;color:var(--muted)}
+ul.recs{margin:0;padding:0;list-style:none;border-top:2px solid var(--fg)}
+ul.recs li{padding:10px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:7.5em minmax(0,1fr);gap:12px}
+ul.recs .k{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding-top:3px}
+.k.add{color:var(--good)}.k.cut{color:var(--bad)}.k.watch{color:var(--warn)}.k.keep{color:var(--gold-ink)}
+.summary-bar{position:sticky;bottom:0;background:var(--band);color:#fff;border-top:4px solid var(--gold);padding-bottom:env(safe-area-inset-bottom,0px)}
+.summary-bar .wrap{padding-block:10px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center;justify-content:space-between;font-size:13px}
+.summary-bar b{color:var(--gold);font-variant-numeric:tabular-nums}
+.summary-bar .btn{background:var(--gold);color:#000;border-color:var(--gold)}
+textarea#copybox{width:100%;height:160px;font:12px var(--f-mono);margin-top:10px;background:var(--surface);color:var(--fg);border:1px solid var(--line);padding:8px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>
+/* simplified layout additions */
+.top-sum{display:flex;flex-wrap:wrap;gap:6px 24px;align-items:baseline;margin:22px 0 6px}
+.top-sum .big{font-size:22px;font-weight:800}
+.top-sum .sub{color:var(--muted);font-size:13px}
+.howto{font-size:13px;color:var(--muted);margin:0 0 18px;max-width:80ch}
+.howto b{color:var(--fg)}
+.vlist{border-top:2px solid var(--fg)}
+.vrow{border-bottom:1px solid var(--line)}
+.vline{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px 18px;align-items:center;padding:12px 4px}
+.vline .nm{font-weight:700;font-size:15px}
+.vline .nm small{display:block;font-weight:500;font-size:12px;color:var(--muted);margin-top:2px}
+.vline .cs{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);white-space:nowrap;text-align:right}
+.vline .cs b{color:var(--fg);font-size:16px}
+.vline .acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.vrow.done .nm{text-decoration:line-through;text-decoration-color:var(--gold)}
+.vrow.done{background:color-mix(in srgb,var(--gold) 8%,transparent)}
+.lnk{background:none;border:0;color:var(--fg);font:600 12px var(--f-body);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:6px 2px}
+.detail{padding:0 4px 16px}
+.detail table td.item{min-width:0}
+.dot{display:inline-block;width:8px;height:8px;margin-right:6px;background:var(--gold)}
+.dot.email{background:var(--gold-ink)}.dot.store{background:var(--muted)}.dot.none{background:var(--bad)}
+.grp{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:18px 4px 6px}
+.cards3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:22px}
+@media (max-width:900px){.cards3{grid-template-columns:1fr}}
+.cards3>*{min-width:0}
+ol.top.short li{grid-template-columns:1.6em minmax(0,1fr) auto}
+details.how{margin:36px 0 60px;border-top:1px solid var(--line);padding-top:12px}
+details.how summary{cursor:pointer;font-weight:700;font-size:13px}
+@media (max-width:640px){.vline{grid-template-columns:minmax(0,1fr) auto}.vline .acts{grid-column:1/-1;justify-content:flex-start}}
+</style>
+
+<header class="band"><div class="wrap">
+  <div><div class="brand">Skylinks at Buchanan Fields · Pro Shop</div><h1>Weekly Order Run</h1></div>
+  <div class="meta"><span>Sales week <b>Oct 27 – Nov 2</b></span><span>Pulled <b>Tue, Nov 3, 2026</b> · Lightspeed, read only</span></div>
+</div></header>
+
+<main class="wrap">
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tab-sales" aria-selected="true" data-p="sales">1 · Last week's sales</button>
+    <button role="tab" id="tab-ideas" aria-selected="false" data-p="ideas">2 · Ideas</button>
+    <button role="tab" id="tab-order" aria-selected="false" data-p="order">3 · This week's order</button>
+  </nav>
+
+  <section class="panel" id="p-order">
+    <div class="top-sum"><span class="big" id="sumBig">—</span><span class="sub" id="sumSub"></span></div>
+    <p class="howto">For each vendor: press the gold button, place or send the order, then check <b>Done</b>. To change a quantity, open <b>See items</b> and edit the case count (0 removes it).</p>
+    <div class="vlist" id="vlist"></div>
+  </section>
+
+  <section class="panel" id="p-sales" hidden>
+    <div class="kpis" id="kpis"></div>
+    <div class="cards3" id="tops"></div>
+  </section>
+
+  <section class="panel" id="p-ideas" hidden>
+    <h3>Top suggestions</h3>
+    <ul class="recs" id="recs"></ul>
+    <div class="cards3" id="ideaLists"></div>
+  </section>
+
+  <details class="how"><summary>How the numbers work</summary>
+    <ul class="recs" style="margin-top:10px">
+      <li><span class="k keep">Pace</span><span>Average units sold per week over the last 4 weeks, from Lightspeed.</span></li>
+      <li><span class="k keep">Par</span><span>Pace × weeks until the next delivery, plus a cushion.</span></li>
+      <li><span class="k keep">Cases</span><span>What's needed to get back to par, rounded up to whole cases (case sizes from Lightspeed). Never more than about 4 weeks of sales, but 1 case is always OK.</span></li>
+      <li><span class="k watch">Stock off</span><span>Many items show negative stock in Lightspeed. For those, the order buys back what sold last week instead.</span></li>
+      <li><span class="k keep">You decide</span><span>Nothing is ordered or emailed until you do it. Edits and Done checks save in this browser only.</span></li>
+    </ul>
+  </details>
+</main>
+<div class="wrap" id="copyWrap" hidden><textarea id="copybox" readonly aria-label="Copied text"></textarea></div>
+<script>const DATA={"cats":{"SNK":{"u7":305,"r7":683,"u4":1824,"r4":3815},"ALC":{"u7":1244,"r7":9466,"u4":6165,"r4":43851},"NA":{"u7":705,"r7":1443,"u4":3701,"r4":7252},"MER":{"u7":77,"r7":1580,"u4":379,"r4":7308}},"top":{"SNK":[["Frollies - Watermelon/Pineapple",41,80],["Doritos - Nacho Cheese - 2.5oz",21,62],["Doritos - Cool Ranch - 2.5oz",18,53],["Drumstick - Cone",23,46],["Fatboy - Sandwich",18,36],["Pocky - Cookies & Cream - 2.47oz",12,36],["Oreo - Sandwich",15,30],["Pocky - Chocolate Cream - 2.47oz",10,30],["Cheetos - Flamin Hot",9,27],["Kettle - Sea Salt & Vinegar - 2oz",8,24]],"ALC":[["Coors Light - Lager - 16oz",54,314],["Modelo - Especial - 24oz",31,290],["Sierra Nevada - Hazy Little Thing - IPA - 19.2oz",25,241],["Alvarado Street - Mai Tai - Tropical IPA - 16oz",24,205],["Lagunitas - Lil Sumpin Sumpin - 19.2oz",23,193],["Twisted Tea - Half & Half - 24oz",22,181],["Budweiser - 16oz",20,158],["Altamont - Maui Waui - IPA - 16oz",18,152],["Bear Republic - Juicy Hoot - 19oz",14,135],["Modelo - Chelada - 24oz",16,130]],"NA":[["Crystal Geyser 16.9oz",230,227],["Coffee (in-house)",34,68],["Coke - Diet - 12oz",31,62],["Simply - Lemonade - 11.5oz",18,54],["Coke - 12oz",36,51],["Gatorade - Cool Blue - 28oz",16,46],["Red Bull - Sugarfree - 8.4oz",14,40],["Dr Pepper - 12oz",23,39],["Simply - Orange Juice - 11.5 oz",13,39],["Red Bull - Original - 8.4oz",15,37]],"MER":[["Titleist X Skylinks Glove - Men's LH-S",3,75],["Titleist X Skylinks Glove - Ladies LH-S",3,70],["Titleist Perma Soft - Men's Cad LH-M",3,63],["Titleist Perma Soft - Men's Cad LH-L",3,63],["Balls - Titleist - ProV1 - Dozen #46",1,63],["Balls - Titleist - ProV1 - Dozen #31",1,63],["Balls - Titleist - ProV1X - Dozen #6",1,63],["Balls - Titleist - ProV1 - Dozen #3",1,63],["Titleist X Skylinks Glove - Men's LH-M/L",2,48],["Titleist X Skylinks Glove - Men's LH-M",2,48]]},"items":[["5 Suns - Ernst Amber Ale - 16oz","5SUN","ALC",12,16,6,10,0,0,"A",24],["5 Suns - Ghost Moon Pilsner - 16oz","5SUN","ALC",0,6,0,4,4,0,"B",24],["Alameda Brewing - Island Hazy - Hazy IPA - 16oz","ALAM","ALC",12,27,3,17,5,0,"A",24],["Alameda Brewing - Big Paddle - Czech Pilsner - 16oz","ALAM","ALC",20,23,3,15,0,0,"A",24],["Alameda Brewing - Pachuco - Mexican Lager - 16oz","ALAM","ALC",33,13,3,9,0,0,"B",24],["Alameda Brewing - Let It Lager - Munich Helles - 16oz","ALAM","ALC",9,13,2,9,0,0,"B",24],["Alameda Brewing - Coastal Classic - West Coast IPA - 16oz","ALAM","ALC",34,11,3,7,0,0,"B",24],["Altamont - Maui Waui - IPA - 19oz","ALTA","ALC",-46,76,0,48,19,1,"A",12],["Altamont - Maui Waui - IPA - 16oz","ALTA","ALC",-40,66,18,42,18,1,"A",24],["Altamont - Hella Hoppy - DIPA - 19oz","ALTA","ALC",-1,36,10,23,10,1,"A",12],["Altamont - Mac Drizzle - Gold Ale - 19oz","ALTA","ALC",14,25,3,16,2,0,"A",12],["Altamont - Festbier - 16oz","ALTA","ALC",-21,16,0,10,4,1,"A",24],["Altamont - Hella Hoppy - DIPA - 16oz","ALTA","ALC",14,15,1,10,0,0,"B",24],["Altamont - Juice Above The Clouds - DIPA - 16oz","ALTA","ALC",15,11,6,7,0,0,"B",24],["Altamont - Beach Snack - Rice Lager - 16oz","ALTA","ALC",12,9,1,6,0,0,"B",24],["Almanac - Seaside West Coast - 16oz","BRKT","ALC",-38,42,10,16,11,1,"A",24],["Almanac - Love Hazy - 16oz","BRKT","ALC",-49,33,9,13,9,1,"A",24],["Dark Horse - Sparkling Rose Bubbles - 375ml","BRKT","ALC",-31,32,6,12,8,1,"A",12],["Dark Horse - Pinot Noir - 375ml","BRKT","ALC",3,31,10,12,9,0,"A",12],["Dark Horse - Sauvignon Blanc - 375ml","BRKT","ALC",-11,30,8,12,8,1,"A",12],["Headlands - Party Wave - 16oz","BRKT","ALC",-55,26,6,10,7,1,"A",24],["Salty Crew - Blonde Ale - 16oz","BRKT","ALC",-21,24,7,9,7,1,"A",12],["Dark Horse - Pinot Grigio - 375ml","BRKT","ALC",-28,24,3,9,6,1,"A",12],["East Brother - Bo Pilsner - 16oz","BRKT","ALC",-27,20,5,8,5,1,"A",24],["North Coast - Scrimshaw Pilsner - 19.2oz","BRKT","ALC",-22,18,3,7,5,1,"A",12],["Headlands - Diablo - Double IPA - 16oz","BRKT","ALC",-18,17,5,7,5,1,"A",24],["Almanac - Big Love Hazy - 16oz","BRKT","ALC",-13,17,2,7,4,1,"A",24],["Headlands - Bonita Pilsner - 16oz","BRKT","ALC",-1,15,1,6,4,1,"A",24],["Headlands - Cargo Shorts New Zealand Pale Ale - 16oz","BRKT","ALC",23,14,1,6,0,0,"B",24],["Kyla - Lavender Lemonade - 16oz","BRKT","ALC",45,11,4,5,0,0,"B",12],["East Brother - Blonde Ale - 16oz","BRKT","ALC",-34,10,2,4,3,1,"B",24],["Kyla - Sunset Trio - 16oz","BRKT","ALC",-52,9,1,4,2,1,"B",12],["Kyla - Coconut Crush - 16oz","BRKT","ALC",31,8,0,3,0,0,"B",12],["Headlands - Hawk Hill - Hefeweizen - 16oz","BRKT","ALC",11,8,4,3,0,0,"B",24],["Buttercup - Chardonnay - 355ml","BRKT","ALC",15,7,0,3,0,0,"B",12],["Clown Shoes - Space Cake Double IPA - 16oz","BRKT","ALC",-15,7,0,3,2,1,"B",24],["Kyla - Lychee Lemonade - 16oz","BRKT","ALC",10,7,3,3,0,0,"B",12],["Del Cielo - Orange You Delicious - 16oz","DELC","ALC",2,28,2,18,16,0,"A",24],["Del Cielo - Vato Loco - 16oz","DELC","ALC",18,24,3,15,0,0,"A",24],["Del Cielo - Mental Haze - 16oz","DELC","ALC",8,20,4,13,5,0,"A",24],["Del Cielo - Coqueta - 16oz","DELC","ALC",3,18,2,12,9,0,"A",24],["Del Cielo - Patria - Hazy IPA - 16oz","DELC","ALC",17,15,2,10,0,0,"B",24],["Del Cielo - Festbirra - Festbier - 16oz","DELC","ALC",11,10,2,7,0,0,"B",24],["Del Cielo - Morena Chelada - 16oz","DELC","ALC",12,6,3,4,0,0,"B",24],["Morgan Territory - Metalmark Oktoberfest - 16oz","DELT","ALC",27,18,4,7,0,0,"A",24],["Sparkling Water - Wyld CBD - Grapefruit - 12oz","DELT","NA",5,15,5,6,1,0,"B",12],["Craftwell Cocktails - Strawberry Margarita - 12oz","DELT","ALC",78,13,6,5,0,0,"B",24],["Craftwell Cocktails - Peach Mojito - 12oz","DELT","ALC",52,12,3,5,0,0,"B",24],["Craftwell Cocktails - Pineapple Margarita - 12oz","DELT","ALC",49,11,1,5,0,0,"B",24],["Sparkling Water - Wyld CBD - Blueberry Pomegranate - 12oz","DELT","NA",25,10,4,4,0,0,"B",12],["Sparkling Water - Wyld CBD - Blood Orange - 12oz","DELT","NA",44,9,1,4,0,0,"B",12],["Craftwell Cocktails - Hibiscus Lemonade - 12oz","DELT","ALC",83,8,3,3,0,0,"B",24],["Morgan Territory - Hard Root Beer - 16oz","DELT","ALC",68,7,0,3,0,0,"B",24],["Morgan Territory - Bees Better Have My Honey - Wheat Ale - 16oz","DELT","ALC",57,6,0,3,0,0,"B",24],["Epidemic Ales - Abomination - 1/6B - KEG Single","EPID","ALC",-37,37,0,24,9,1,"A",41],["Epidemic Ales - Zombrew - IPA - 16oz","EPID","ALC",6,28,11,18,12,0,"A",24],["Epidemic Ales - Pineapple Upside Down - Fruited Pale Ale - 16oz","EPID","ALC",-19,24,6,15,6,1,"A",24],["Epidemic Ales - Limelight - Lager - 16oz","EPID","ALC",-23,22,4,14,6,1,"A",24],["Epidemic Ales - Pale Alien - Hazy Pale Ale - 16oz","EPID","ALC",21,16,2,10,0,0,"A",24],["Epidemic Ales - Lager At World's End - Lager - 16oz","EPID","ALC",-16,14,3,9,4,1,"B",24],["Epidemic Ales - SUMMER SKULLFEST - Hazy IPA - 16oz","EPID","ALC",-17,11,1,7,3,1,"B",24],["Epidemic Ales - Horchata Lager - Lager - 16oz","EPID","ALC",4,10,1,7,3,0,"B",24],["Epidemic Ales - Chemical Warfare - Hazy IPA - 16oz","EPID","ALC",27,9,0,6,0,0,"B",24],["Epidemic Ales - Nutty But Nice - Peanut Butter Stout - 16oz","EPID","ALC",32,7,3,5,0,0,"B",24],["Epidemic Ales - BeerTron - West Coast Pale Ale - 16oz","EPID","ALC",-19,7,0,5,2,1,"B",24],["Coors Light - Lager - 16oz","GOLD","ALC",-533,258,54,97,65,1,"A",15],["Modelo - Especial - 24oz","GOLD","ALC",-613,188,31,71,47,1,"A",12],["Pacifico - Lager - 24oz","GOLD","ALC",-279,115,14,44,29,1,"A",12],["Modelo - Especial - 12oz","GOLD","ALC",-614,105,18,40,26,1,"A",24],["Sierra Nevada - Hazy Little Thing - IPA - 19.2oz","GOLD","ALC",-89,98,25,37,25,1,"A",15],["Pacifico - Clara - 12oz","GOLD","ALC",-59,94,10,36,24,1,"A",24],["Twisted Tea - Half & Half - 24oz","GOLD","ALC",-219,93,22,35,23,1,"A",12],["Coors Banquet - Lager - 16oz","GOLD","ALC",-67,77,21,29,21,1,"A",18],["Modelo - Chelada - 24oz","GOLD","ALC",-139,73,16,28,18,1,"A",12],["Lagunitas - Lil Sumpin Sumpin - 19.2oz","GOLD","ALC",-124,72,23,27,23,1,"A",12],["Modelo - Negra - 24oz","GOLD","ALC",4,64,13,24,20,0,"A",12],["Topo Chico - Strawberry Guava - 24oz","GOLD","ALC",-121,60,11,23,15,1,"A",12],["Blue Moon - Belgian White - 19.2oz","GOLD","ALC",-121,58,7,22,15,1,"A",12],["White Claw - Watermelon - 19.2oz","GOLD","ALC",-163,49,8,19,12,1,"A",12],["Shooter - Pink Whitney - 50ml","GOLD","ALC",219,49,16,19,0,0,"B",120],["Lagunitas - IPA - 19.2oz","GOLD","ALC",10,48,13,18,8,0,"A",12],["White Claw - Blackberry - 19.2oz","GOLD","ALC",-249,44,13,17,13,1,"A",12],["White Claw - Mango - 12oz","GOLD","ALC",-17,43,2,17,11,1,"A",24],["Miller Lite - American Lager - 16oz","GOLD","ALC",-111,43,13,17,13,1,"A",18],["White Claw - Blackberry - 12oz","GOLD","ALC",-74,41,3,16,10,1,"A",24],["Sierra Nevada - Cosmic Little Thing - 19.2oz","GOLD","ALC",-4,41,3,16,10,1,"A",15],["White Claw - Watermelon - 12oz","GOLD","ALC",16,40,4,15,0,0,"A",24],["Corona - Extra - 12oz","GOLD","ALC",-59,38,8,15,10,1,"A",18],["Corona - Extra - 24oz","GOLD","ALC",-153,35,5,14,9,1,"A",12],["Sierra Nevada - Pale Ale - 19.2oz","GOLD","ALC",-163,34,4,13,9,1,"A",15],["Cayman Jack - Tropical Margarita - 19.2oz","GOLD","ALC",-82,33,12,13,12,1,"A",12],["White Claw - Strawberry - 19.2oz","GOLD","ALC",114,33,3,13,0,0,"A",12],["Sierra Nevada - Mango Little Thing - 12oz","GOLD","ALC",19,31,19,12,0,0,"A",24],["Guinness - Stout - 14.9oz","GOLD","ALC",-146,31,13,12,12,1,"A",24],["Monaco - Blue Crush - 12oz","GOLD","ALC",-61,29,1,11,7,1,"B",12],["Truly - Wild Berry - 24oz","GOLD","ALC",-18,28,5,11,7,1,"A",12],["Buzz Ball - Berry Cherry Limeade - 187ml","GOLD","ALC",-27,26,3,10,7,1,"A",24],["Sierra Nevada - Atomic Torpedo - Imperial IPA - 19.2oz","GOLD","ALC",-86,26,9,10,9,1,"A",15],["Twisted Tea - Half & Half - 12oz","GOLD","ALC",21,26,6,10,0,0,"A",24],["White Claw - Black Cherry - 12oz","GOLD","ALC",19,26,5,10,0,0,"A",24],["Sierra Nevada - Big Little Thing - Hazy Imperial IPA - 19.2oz","GOLD","ALC",-24,25,7,10,7,1,"A",15],["White Claw - Ruby Grapefruit - 12oz","GOLD","ALC",-34,25,3,10,6,1,"B",24],["Ace - Guava - 12oz","GOLD","ALC",-89,25,7,10,7,1,"B",24],["Lagunitas - Uncensored Punch - Tropical Fruit Punch - 19.2oz","GOLD","ALC",-26,24,5,9,6,1,"A",12],["Buzz Ball - Lime Rita -187ml","GOLD","ALC",20,24,7,9,0,0,"A",24],["Cayman Jack - Strawberry Margarita - 24oz","GOLD","ALC",-37,23,9,9,9,1,"A",12],["Fall River - Numb Numb Juice - Hazy IPA - 16oz","GOLD","ALC",-62,23,2,9,6,1,"A",24],["Truly - Wild Berry - 12oz","GOLD","ALC",-35,23,8,9,8,1,"B",24],["Topo Chico - Ranch Water - Signature Lime - 12oz","GOLD","ALC",-45,22,3,9,6,1,"B",24],["Monaco - Lime Crush - 12oz","GOLD","ALC",6,22,7,9,3,0,"A",12],["Truly - Pineapple - 24oz","GOLD","ALC",-13,22,8,9,8,1,"A",12],["Mike's Harder - Hurricane Punch - 23.5oz","GOLD","ALC",-59,20,0,8,5,1,"A",12],["Voodoo Ranger - Imperial IPA - 19.2oz","GOLD","ALC",-27,20,3,8,5,1,"A",15],["Voodoo Ranger - Juicy Haze - IPA - 19.2 oz","GOLD","ALC",-43,19,6,8,6,1,"A",15],["Buzz Ball - Chocolate - 187ml","GOLD","ALC",-60,19,1,8,5,1,"B",24],["White Claw - Green Apple - 12oz","GOLD","ALC",15,17,2,7,0,0,"B",24],["Truly - Strawberry Lemonade - 24oz","GOLD","ALC",-76,16,2,6,4,1,"A",12],["Monaco - Watermelon Crush - 12oz","GOLD","ALC",-19,15,1,6,4,1,"B",12],["Voodoo Ranger - IPA - 19.2oz","GOLD","ALC",-4,15,2,6,4,1,"B",15],["Angry Orchard - Crisp Apple - 12oz","GOLD","ALC",20,14,2,6,0,0,"B",24],["Monaco - Black Raspberry - 12oz","GOLD","ALC",-42,12,1,5,3,1,"B",12],["White Claw - Peach - 12oz","GOLD","ALC",-78,11,2,5,3,1,"B",24],["Garage Classic Lime - 12oz","GOLD","ALC",16,10,0,4,0,0,"B",24],["Non-Alcoholic - Lagunitas - IPA - 12oz","GOLD","NA",-11,10,2,4,3,1,"B",24],["Heineken - Silver - 12oz","GOLD","ALC",-137,10,3,4,3,1,"B",24],["Heineken - Lager - 24oz","GOLD","ALC",-33,10,2,4,3,1,"B",12],["Non-Alcoholic - Modelo - Limon y Sal - 12 oz","GOLD","NA",18,9,4,4,0,0,"B",24],["Green Flash - West Coast IPA - 12oz","GOLD","ALC",1,9,2,4,3,0,"B",24],["Monaco - Citrus Crush - 12oz","GOLD","ALC",3,8,1,3,0,0,"B",12],["Lagunitas - Maximus - 19.2oz","GOLD","ALC",68,8,3,3,0,0,"B",15],["Non-Alcoholic - Lagunitas - Hazy - IPNA - 12oz","GOLD","NA",16,7,2,3,0,0,"B",24],["Sierra Nevada - West Ghost - West Coast IPA - 16oz","GOLD","ALC",41,7,1,3,0,0,"B",24],["Voodoo Ranger - Fruit Juice - IPA - 19.2 oz","GOLD","ALC",-93,7,1,3,2,1,"B",15],["Fall River - Numb & Number - Hazy IPA - 16oz","GOLD","ALC",-86,7,1,3,2,1,"B",24],["Non-alcoholic - Samuel Adams - HAZY IPA - 12oz","GOLD","NA",14,6,4,3,0,0,"B",24],["Tecate - Original - 24oz","GOLD","ALC",43,6,2,3,0,0,"B",12],["Gourmet Beef Jerky - Extra Hot","HLTR","SNK",0,6,1,3,3,0,"A",12],["Shooter - Fireball - 50mL","MARK","ALC",2680,245,48,92,0,0,"A",120],["Michelob - Ultra - 12oz","MARK","ALC",211,85,13,32,0,0,"A",24],["Cali Squeeze - Blood Orange - 19.2oz","MARK","ALC",11,79,14,30,19,0,"A",12],["Golden State - Mighty Dry - 16oz","MARK","ALC",220,78,10,30,0,0,"A",24],["Elysian - Space Dust - IPA - 19.2oz","MARK","ALC",112,76,10,29,0,0,"A",15],["Firestone Walker - 805 - 24oz","MARK","ALC",149,66,7,25,0,0,"A",12],["Fireball - Blazin' Apple - 1.7oz","MARK","ALC",765,64,14,24,0,0,"B",120],["Stella Artois - 12oz","MARK","ALC",9,52,4,20,11,0,"A",24],["Shooter - Fris - Vodka - 50ml","MARK","ALC",327,48,6,18,0,0,"B",120],["Kona Big Wave - Liquid Aloha - 25oz","MARK","ALC",25,47,10,18,0,0,"A",15],["Bear Republic - Juicy Hoot - 19oz","MARK","ALC",-1,40,14,15,14,1,"A",15],["Mango Cart Mas - Imperial Wheat Ale - 19oz","MARK","ALC",34,39,14,15,0,0,"A",15],["Martinelli's - Mango Hard - 12oz","MARK","ALC",77,36,6,14,0,0,"A",24],["Bud Light - 16oz","MARK","ALC",100,35,1,14,0,0,"A",24],["Golden State - Radical Pog - 16oz","MARK","ALC",227,34,6,13,0,0,"A",24],["Archer Roose - Rose - 250mL","MARK","ALC",27,32,3,12,0,0,"A",24],["Golden State - Radical Pineapple - 16oz","MARK","ALC",97,31,13,12,0,0,"A",24],["Budweiser - 16oz","MARK","ALC",40,29,20,11,0,0,"A",24],["Shooter - Southern Comfort - Whiskey - 50ml","MARK","ALC",551,27,12,11,0,0,"B",120],["Golden State - Brut - 16oz","MARK","ALC",237,26,6,10,0,0,"A",24],["Martinelli's - Original Hard Cider - 12 oz","MARK","ALC",97,22,3,9,0,0,"A",24],["Drake's Brewing - Juicy Hoot - Hazy IPA - 12oz","MARK","ALC",34,21,8,8,0,0,"B",24],["Archer Roose - Bubbly Rose - 250mL","MARK","ALC",55,21,7,8,0,0,"A",24],["Golden State - Jamaica - 16oz","MARK","ALC",72,20,4,8,0,0,"A",24],["Bear Republic - Racer 7 Hazy - 12oz","MARK","ALC",22,19,3,8,0,0,"B",24],["Elysian - Juice Dust - Juicy IPA - 19.2oz","MARK","ALC",133,18,3,7,0,0,"A",15],["Shooter - 99 - Bananas - 50ml","MARK","ALC",557,18,4,7,0,0,"B",120],["Elysian - Jacktail - Hazy IPA - 19.2oz","MARK","ALC",42,17,4,7,0,0,"A",15],["Archer Roose - Bubbly White Wine - 250mL","MARK","ALC",62,10,0,4,0,0,"B",24],["Bear Republic - Racer 5 - 19oz","MARK","ALC",71,9,2,4,0,0,"B",15],["Non-Alcoholic - Cider - Golden State - Dry & Mighty - 16oz","MARK","NA",4,9,0,4,0,0,"A",24],["Mango Cart - Wheat Ale - 12oz","MARK","ALC",43,9,3,4,0,0,"B",24],["Non-Alcoholic - Bero - Kingston - Golden Pilsner - 12oz","MARK","NA",46,9,3,4,0,0,"B",24],["Shooter - 99 - Apples - 50ml","MARK","ALC",399,8,3,3,0,0,"B",120],["Shooter - 99 - Watermelon - 50ml","MARK","ALC",324,8,2,3,0,0,"B",120],["Hard Soda - Cantaritos - Mandarin - 25oz","MARK","ALC",67,6,0,3,0,0,"B",15],["Alvarado Street - Mai Tai - Tropical IPA - 16oz","MIND","ALC",-56,34,24,13,13,1,"A",24],["Paperback - Bunny With a Chainsaw Hazy IPA - 16oz","MIND","ALC",11,20,6,8,0,0,"A",24],["Great Notion - Black Magic Dreams - Hazy IPA - 16oz","MIND","ALC",-1,17,7,7,7,1,"A",24],["Paperback - Paperback IPA - West Coast IPA - 16oz","MIND","ALC",18,17,5,7,0,0,"A",24],["Breakside - Disco Overload - IPA - 16oz","MIND","ALC",7,12,2,5,0,0,"B",24],["Breakside - Wanderlust IPA - 19oz","MIND","ALC",10,10,1,4,0,0,"B",12],["Great Notion - Army of Dankness - West Coast IPA - 16oz","MIND","ALC",15,9,4,4,0,0,"B",24],["Fort George - Mirrored Realities - Fresh Hop IPA - 16oz","MIND","ALC",14,9,1,4,0,0,"B",24],["Paperback - No Way Back - Triple Dry Hopped - 16oz","MIND","ALC",0,9,0,4,4,0,"B",24],["Great Notion - Boo Berry Muffin - Tart Ale - 16oz","MIND","ALC",15,9,7,4,0,0,"B",24],["Fort George - Quality of Conciousness - Fresh Hop Hazy IPA - 16oz","MIND","ALC",14,8,1,3,0,0,"B",24],["Calidad - Quality Cerveza - 19oz","MIND","ALC",20,8,1,3,0,0,"B",12],["Brix Factory - The Eye of Doom - Hazy IPA - 16oz","MIND","ALC",16,7,0,3,0,0,"B",24],["Breakside - Breakside Pilsner - 12oz","MIND","ALC",16,7,1,3,0,0,"B",24],["Great Notion - Key Lime Pie - Tart Ale - 16oz","MIND","ALC",11,7,0,3,0,0,"B",24],["Great Notion - Little Haus of Horrors - DIPA - 16oz","MIND","ALC",18,6,4,3,0,0,"B",24],["Madewest - Short Lived - West Coast IPA - 16oz","MIND","ALC",13,6,1,3,0,0,"B",24],["Breakside - Breakside IPA - 16oz","MIND","ALC",0,6,0,3,3,0,"B",24],["Fort George - Fields Of Greens - Hazy IPA - 16oz","MIND","ALC",14,6,0,3,0,0,"B",24],["Gym Weed - Watermelon - 12oz","MUSC","NA",-82,12,4,5,4,1,"B",12],["Gym Weed - Tropical Punch - 12oz","MUSC","NA",-104,11,0,5,3,1,"B",12],["Bucked Up - Rocket Pop - 16oz","MUSC","NA",25,9,0,4,0,0,"B",12],["Gym Weed - Mango Razz - 12oz","MUSC","NA",-32,9,0,4,2,1,"B",12],["Bucked Up - White Gummy Deer - 16oz","MUSC","NA",7,8,2,3,0,0,"B",12],["Bucked Up - Blood Razz - 16oz","MUSC","NA",66,7,3,3,0,0,"B",12],["Frollies - Watermelon/Pineapple","NONE","SNK",-120,120,41,45,41,1,"A",24],["Arizona - Lemonade - 22oz","NONE","NA",-192,15,0,6,4,1,"B",24],["Sour Punch - Rainbow Straws - 2oz","NONE","SNK",-46,8,0,3,2,1,"B",24],["Butterfinger - 1.9oz","NONE","SNK",-23,8,2,3,2,1,"B",36],["Super Coffee - Mocha Latte - 12oz","REPR","NA",46,8,1,3,0,0,"B",12],["Drumstick - Cone","SAMS","SNK",-1529,117,23,44,29,1,"A",16],["Oreo - Sandwich","SAMS","SNK",-884,103,15,39,26,1,"A",12],["Wylers - Italian Ice","SAMS","SNK",-480,92,11,35,23,1,"A",96],["Fatboy - Sandwich","SAMS","SNK",-977,89,18,34,22,1,"A",18],["Kit-Kat - Cone","SAMS","SNK",-185,76,7,29,19,1,"A",16],["Otter Pop - Variety","SAMS","SNK",-2097,74,9,28,19,1,"A",16],["Coke - Zero - 12oz","SAMS","NA",-392,71,6,27,18,1,"A",35],["Snickers - Ice Cream Bar","SAMS","SNK",-624,59,10,23,15,1,"A",24],["Skittles - Original - 2.17oz","SAMS","SNK",-432,38,2,15,10,1,"B",36],["M&Ms - Milk Chocolate","SAMS","SNK",-320,37,6,14,9,1,"B",48],["Snickers - Chocolate - 1.86oz","SAMS","SNK",-494,36,1,14,9,1,"B",48],["Starburst - 2.07oz","SAMS","SNK",-43,30,7,12,8,1,"B",36],["Outshine - Pop","SAMS","SNK",-855,29,0,11,7,1,"A",36],["Twix - Chocolate","SAMS","SNK",-224,28,8,11,8,1,"B",36],["Skittles - Sour - 2.17oz","SAMS","SNK",-308,26,3,10,7,1,"B",24],["Reeses - Peanut Butter","SAMS","SNK",-189,24,6,9,6,1,"B",36],["Famous Amos - Chocolate Chip","SAMS","SNK",-121,24,2,9,6,1,"B",42],["Hershey's Bar - Cookies N' Cream - 1.55oz","SAMS","SNK",-87,23,3,9,6,1,"B",36],["Skinny Pop - Original - 0.65oz","SAMS","SNK",-136,21,0,8,5,1,"B",24],["Kit Kat - Chocolate - 1.5oz","SAMS","SNK",-237,19,4,8,5,1,"B",36],["Skittles - Wild Berry - 2.17oz","SAMS","SNK",-29,18,0,7,5,1,"B",36],["M&Ms - Chocolate Peanut","SAMS","SNK",-321,18,0,7,5,1,"B",48],["Milky Way - Chocolate - 1.84oz","SAMS","SNK",-105,15,0,6,4,1,"B",36],["FairLife - Vanilla 30G Protein - 11.5oz","SAMS","NA",-10,10,4,4,4,1,"B",12],["Muscle Milk - Chocolate - 11oz","SAMS","NA",-17,9,3,4,3,1,"B",15],["Luigis - Italian Ice - Pushpop","SAMS","SNK",-1810,8,3,3,3,1,"B",24],["Crystal Geyser 16.9oz","SFNA","NA",-2624,1230,230,462,308,1,"A",24],["Coke - 12oz","SFNA","NA",-689,151,36,57,38,1,"A",12],["Caprisun - 6oz","SFNA","NA",-695,143,24,54,36,1,"A",40],["Coke - Diet - 12oz","SFNA","NA",-289,134,31,51,34,1,"A",12],["Sprite - 12oz","SFNA","NA",-93,105,22,40,26,1,"A",12],["Dr Pepper - 12oz","SFNA","NA",-408,94,23,36,24,1,"A",12],["Simply - Lemonade - 11.5oz","SFNA","NA",-18,76,18,29,19,1,"A",12],["Doritos - Nacho Cheese - 2.5oz","SFNA","SNK",-49,73,21,28,21,1,"A",24],["Doritos - Cool Ranch - 2.5oz","SFNA","SNK",3,68,18,26,23,0,"A",24],["Gatorade - Cool Blue - 28oz","SFNA","NA",-225,66,16,25,17,1,"A",15],["Arizona - Mucho Mango - 22oz","SFNA","NA",-499,61,0,23,15,1,"A",24],["Liquid Death - Slice of Lime - 19.2oz","SFNA","NA",-44,56,10,21,14,1,"A",12],["Langers - Apple Juice - 15.2oz","SFNA","NA",-140,53,14,20,14,1,"A",12],["Simply - Orange Juice - 11.5 oz","SFNA","NA",-48,52,13,20,13,1,"A",12],["Cactus Cooler - 12oz","SFNA","NA",-60,49,13,19,13,1,"A",12],["Chester - Hot Fries - 2.58oz","SFNA","SNK",5,48,0,18,13,0,"A",28],["Gatorade - Fruit Punch - 28oz","SFNA","NA",-92,47,9,18,12,1,"A",15],["Lays - Classic - 2.25oz","SFNA","SNK",-10,44,7,17,11,1,"A",24],["Cheetos - Flamin Hot","SFNA","SNK",30,42,9,16,0,0,"A",32],["Gatorade - Orange - 28oz","SFNA","NA",-29,40,0,15,10,1,"A",15],["Pocky - Chocolate Cream - 2.47oz","SFNA","SNK",-32,39,10,15,10,1,"A",10],["Kettle - Sea Salt & Vinegar - 2oz","SFNA","SNK",0,39,8,15,15,0,"A",24],["Pure Leaf - Sweet Tea - 18.5oz","SFNA","NA",-264,39,7,15,10,1,"A",12],["Gatorade - Lemon Lime - 28oz","SFNA","NA",-109,38,5,15,10,1,"A",15],["Gatorade - Glacier Freeze - 28oz","SFNA","NA",-918,36,0,14,9,1,"A",15],["Liquid Death - Sparkling Water - 19.2oz","SFNA","NA",-154,36,6,14,9,1,"A",12],["Poppi - Raspberry Rose - 12oz","SFNA","NA",-40,34,6,13,9,1,"A",12],["Gatorade - Glacier Cherry - 28oz","SFNA","NA",-192,34,6,13,9,1,"A",15],["Cheetos - Jumbo Puffs - 2.125oz","SFNA","SNK",-147,34,7,13,9,1,"A",24],["Pocky - Cookies & Cream - 2.47oz","SFNA","SNK",-50,33,12,13,12,1,"A",10],["Gatorade - Zero - Cool Blue - 28oz","SFNA","NA",-227,31,3,12,8,1,"A",15],["Pocky - Strawberry Cream - 2.47oz","SFNA","SNK",-84,31,6,12,8,1,"A",10],["Cheetos - Crunchy Regular - 2.75oz","SFNA","SNK",-5,31,6,12,8,1,"A",32],["Lays - BBQ - 2.25oz","SFNA","SNK",9,30,0,12,3,0,"A",24],["Pure Leaf - Lemon - 18.5oz","SFNA","NA",-5,29,4,11,7,1,"A",12],["Arizona - Tropical ChillZicle - 22oz","SFNA","NA",-117,29,0,11,7,1,"B",24],["Olipop - Vintage Cola - 12oz","SFNA","NA",-30,28,0,11,7,1,"A",12],["Gatorade - Zero - Orange - 28oz","SFNA","NA",-86,28,0,11,7,1,"A",15],["Poppi - Root Beer - 12oz","SFNA","NA",7,27,0,11,4,0,"A",12],["Nesquik - Chocolate - 14oz","SFNA","NA",-89,27,8,11,8,1,"B",12],["Hostess - Mini Donuts Powdered - 3oz","SFNA","SNK",-12,26,0,10,7,1,"B",10],["Gatorade - Zero - Fruit Punch - 28oz","SFNA","NA",-202,26,7,10,7,1,"A",15],["Pure Leaf - Raspberry - 18.5oz","SFNA","NA",-59,26,5,10,7,1,"B",12],["Arizona - Green Tea - 22oz","SFNA","NA",-327,26,0,10,7,1,"B",24],["Ruffles - Cheddar & Sour Cream - 2.25oz","SFNA","SNK",-188,25,0,10,6,1,"A",24],["Arizona - Watermelon - 22oz","SFNA","NA",-303,24,0,9,6,1,"B",24],["Gatorade - Zero - Glacier Cherry - 28oz","SFNA","NA",-204,22,4,9,6,1,"A",15],["Itoen - Unsweetened Green - 16.9oz","SFNA","NA",-41,21,4,8,5,1,"B",12],["Off The Farm Bar - Dark Chocolate - 3.3oz","SFNA","SNK",8,15,0,6,0,0,"A",12],["Pure Leaf - Unsweetened - 18.5oz","SFNA","NA",-15,15,5,6,5,1,"B",12],["Tillamook - Beef Stick - Teriyaki - 1.44oz","SFNA","SNK",4,13,3,5,1,0,"B",24],["Itoen - Bold Green Tea - 16.9oz","SFNA","NA",-21,11,1,5,3,1,"B",12],["CLIF Bar - Chocolate Chip","SFNA","SNK",-8,10,0,4,3,1,"B",12],["CLIF Bar - Crunchy Peanut Butter","SFNA","SNK",-62,8,0,3,2,1,"B",12],["Clif Builders - Chocolate Peanut Butter","SFNA","SNK",-8,8,0,3,2,1,"B",12],["Off The Farm Bar - Apple Cinnamon - 3.3oz","SFNA","SNK",9,8,2,3,0,0,"B",12],["Clif Builders - Chocolate","SFNA","SNK",10,7,0,3,0,0,"B",12],["Pure Leaf - Green Tea - 18.5oz","SFNA","NA",-64,7,1,3,2,1,"B",12],["La Croix - Peach Pear - 12oz","SFNA","NA",6,7,0,3,0,0,"B",24],["Solely - Fruit Jerky - Pineapple","SFNA","SNK",4,6,0,3,0,0,"B",12],["Flybird - Tamarind Mango - 250ml","SOUT","ALC",-99,65,7,25,16,1,"A",24],["Red Bull - Original - 8.4oz","SOUT","NA",14,63,15,24,10,0,"A",24],["Red Bull - White Peach - 8.4oz","SOUT","NA",-19,53,3,20,13,1,"A",24],["Red Bull - Tropical - 8.4oz","SOUT","NA",17,49,14,19,2,0,"A",24],["Red Bull - Sugarfree - 8.4oz","SOUT","NA",-39,47,14,18,14,1,"A",24],["Red Bull - Watermelon - 8.4oz","SOUT","NA",-40,46,14,18,14,1,"A",24],["Sabe - Grapefruit Paloma - 250ml","SOUT","ALC",-43,41,10,16,10,1,"A",24],["Red Bull - Sea Blue - 8.4oz","SOUT","NA",30,39,6,15,0,0,"A",24],["Sabe - Espresso Martini - 250ml","SOUT","ALC",-6,37,11,14,11,1,"A",24],["Sabe - Moscow Mule - 250ml","SOUT","ALC",-20,36,5,14,9,1,"A",24],["Sabe - Margarita - 250ml","SOUT","ALC",-44,33,10,13,10,1,"A",24],["Red Bull - Coconut Edition - 8.4oz","SOUT","NA",7,24,4,9,2,0,"B",24],["Flybird - Margarita Baja Lime","SOUT","ALC",-1,24,0,9,6,1,"B",24],["Mumm - Brut Prestige - 750ml","SOUT","ALC",1,11,3,5,4,0,"A",12],["Josh Cellars - Cabernet Sauvignon - 375ml","SOUT","ALC",-13,9,2,4,2,1,"A",12],["14 Hands - Hot To Trot - 355ml","SOUT","ALC",16,9,3,4,0,0,"B",12],["Rodney Strong - Sauvignon Blanc - 750ml","SOUT","ALC",-9,9,1,4,2,1,"A",12],["Freixenet - Cordon Negro Brut - 750ml","SOUT","ALC",9,9,1,4,0,0,"A",12],["14 Hands - Pinot Grigio - 355ml","SOUT","ALC",-4,8,3,3,3,1,"B",12],["Western Flyer - German Pilsner - 16oz","WEST","ALC",-5,19,6,12,6,1,"A",24],["Western Flyer - Mexican Lager - 16oz","WEST","ALC",3,17,2,11,8,0,"A",24],["Western Flyer - Pool Beer - 16oz","WEST","ALC",10,11,2,7,0,0,"B",24],["Western Flyer - Hefeweizen - 16oz","WEST","ALC",8,11,1,7,0,0,"B",24],["Western Flyer - Elbow Bender - 16oz","WEST","ALC",7,10,1,7,0,0,"B",24],["Western Flyer - Hazy IPA - 16oz","WEST","ALC",-8,8,2,5,2,1,"B",24],["Western Flyer - Munich Helles - 16oz","WEST","ALC",-7,7,5,5,5,1,"B",24]],"slow":[["Titleist Perma Soft - Women's LH-M","TITL",53,2,716],["Titleist Perma Soft - Men's RH-M/L","TITL",29,1,392],["Shooter - 99 - Peaches - 50ml","MARK",500,2,350],["Titleist Perma Soft - Men's Cad LH-S","TITL",25,1,338],["Gruet Brut Rose - 375ml","SOUT",33,1,313],["Titleist Perma Soft - Women's RH-L","TITL",23,1,311],["Titleist Perma Soft - Women's RH-S","TITL",22,1,297],["Titleist Perma Soft - Women's RH-M","TITL",21,1,284],["Titleist Perma Soft - Men's Cad LH-XL","TITL",21,1,284],["Morgan Territory - Hoptomic - Hazy IPA - 16oz","DELT",70,2,221],["Shooter - UV - Radical Orange - 50ml","SOUT",288,2,207],["Titleist Perma Soft - Men's RH-XL","TITL",13,1,176],["Beatbox - Blueberry Lemonade - 330ml","MARK",66,1,137],["5 Suns - O.G. Burst Wheat Ale - 16oz","5SUN",47,1,129],["Joel Gott - Chardonnay - 750ml","SOUT",16,2,128],["Beatbox - Fruit Punch - 330ml","MARK",54,1,112],["Epidemic Ales - Brew Life On Marz - 16oz","EPID",45,1,103],["Titleist Hat - Boardwalk Rope - White/Blue/Pink","TITL",5,1,100],["Golf Pride MCC Plus 4 Grip - Grey - Midsize","VWGO",9,2,95],["Josh Cellars - Cabernet Sauvignon - 750ml","SOUT",15,1,94],["SuperStroke Crossline 2.0 Cord Grip - Standard","VWGO",13,1,84],["The Pathfinder NA - Espresso Tonic - 6.8oz","BRKT",22,2,83],["Golf Pride CP2 Pro Grip - Red/Black - Standard","VWGO",9,2,81],["The Pathfinder NA - Negroni - 6.8oz","BRKT",20,2,75],["Sierra Nevada - Torpedo - Extra IPA - 19.2oz","GOLD",29,2,71]],"up":[["Alvarado Street - Mai Tai - Tropical IPA - 16oz","MIND",24,8.5],["Budweiser - 16oz","MARK",20,7.3],["Sierra Nevada - Mango Little Thing - 12oz","GOLD",19,7.8],["Guinness - Stout - 14.9oz","GOLD",13,7.8],["Golden State - Radical Pineapple - 16oz","MARK",13,7.8],["Shooter - Southern Comfort - 50ml","MARK",12,6.8],["Epidemic Ales - Zombrew - IPA - 16oz","EPID",11,7],["Cayman Jack - Strawberry Margarita - 24oz","GOLD",9,5.8],["Drake's Brewing - Juicy Hoot - Hazy IPA - 12oz","MARK",8,5.3],["Great Notion - Black Magic Dreams - Hazy IPA - 16oz","MIND",7,4.3],["Great Notion - Boo Berry Muffin - Tart Ale - 16oz","MIND",7,2.3],["5 Suns - Ernst Amber Ale - 16oz","5SUN",6,4],["Altamont - Juice Above The Clouds - DIPA - 16oz","ALTA",6,2.8],["Craftwell Cocktails - Strawberry Margarita - 12oz","DELT",6,3.3],["Bucked Up - Miami - 16oz","MUSC",5,1.3],["Western Flyer - Munich Helles - 16oz","WEST",5,1.8]],"down":[["Altamont - Maui Waui - IPA - 19oz","ALTA",0,19,-46],["Kit-Kat - Cone","SAMS",7,19,-185],["Coke - Zero - 12oz","SAMS",6,17.8,-392],["Arizona - Mucho Mango - 22oz","SFNA",0,15.3,-499],["Red Bull - White Peach - 8.4oz","SOUT",3,13.3,-19],["Stella Artois - 12oz","MARK",4,13,9],["Chester - Hot Fries - 2.58oz","SFNA",0,12,5],["White Claw - Mango - 12oz","GOLD",2,10.8,-17],["White Claw - Blackberry - 12oz","GOLD",3,10.3,-74],["Sierra Nevada - Cosmic Little Thing - 19.2oz","GOLD",3,10.3,-4],["White Claw - Watermelon - 12oz","GOLD",4,10,16],["Gatorade - Orange - 28oz","SFNA",0,10,-29],["Skittles - Original - 2.17oz","SAMS",2,9.5,-432],["Epidemic Ales - Abomination - 1/6 Keg","EPID",0,9.3,-37],["Snickers - Chocolate - 1.86oz","SAMS",1,9,-494],["Gatorade - Glacier Freeze - 28oz","SFNA",0,9,-918],["Bud Light - 16oz","MARK",1,8.8,100],["White Claw - Strawberry - 19.2oz","GOLD",3,8.3,114],["Archer Roose - Rose - 250mL","MARK",3,8,27],["Gatorade - Zero - Cool Blue - 28oz","SFNA",3,7.8,-227]],"bs":{"IPA & hazy":{"u":1313,"r":10882,"n":76},"Mexican lager":{"u":762,"r":5616,"n":13},"Domestic & import":{"u":702,"r":4089,"n":14},"Wheat, sour, stout & other":{"u":689,"r":5339,"n":37},"Craft lager & pils":{"u":284,"r":2289,"n":23},"Non-alcoholic beer":{"u":58,"r":282,"n":9}},"loc":{"local":{"u":827,"r":6774,"n":56},"other":{"u":2981,"r":21723,"n":116}},"as":{"Beer":{"u":3750,"r":28215,"n":163},"Seltzer":{"u":478,"r":3184,"n":15},"Wine cocktails":{"u":440,"r":2846,"n":21},"Shooters":{"u":416,"r":814,"n":11},"Hard tea, malt & kombucha":{"u":310,"r":1972,"n":14},"Wine":{"u":294,"r":3834,"n":36},"Cider":{"u":292,"r":1919,"n":11},"In-house (Margi, Cantina)":{"u":185,"r":1067,"n":2}}};
+</script><script>const V={
+ GOLD:{n:"GoldenBrands",m:"portal",c:"Tom",e:"TBuccelatto@reyesholdings.com",url:"https://www.sipmarket.com/",cad:"Delivers Wed Nov 11 (order by Tue) · next Dec 9",g:1},
+ BRKT:{n:"Breakthru Bev",m:"portal",c:"JT",e:"",url:"https://www.breakthrubev.com/",cad:"",g:1},
+ MARK:{n:"Markstein Sales Co.",m:"portal",c:"Mike",e:"mpierce@markstein1919.com",url:"https://apps.vtinfo.com/retailer-portal/",cad:"Every 4 weeks, Thu delivery · Nov 3 order still open in portal",g:1},
+ SFNA:{n:"SF Naturals",m:"portal",c:"Peter",e:"peter@sfnaturals.net",url:"https://sfnaturals.pepr.app/",cad:"",g:1},
+ SOUT:{n:"Southern Wine",m:"portal",c:"Diana",e:"DianaValencia@sgws.com",url:"https://shop.sgproof.com/",cad:"",g:1},
+ MUSC:{n:"Muscle Foods USA",m:"portal",c:"Alex",e:"aperez@musclefoodsusa.com",url:"https://shop.musclefoodsusa.com/",cad:"",g:1},
+ MIND:{n:"Mindful",m:"email",c:"Clayton",e:"Clayton@mindfuld.com",cad:"",g:2},
+ DELT:{n:"Delta Pacific",m:"email",c:"Paul",e:"Paul.Klevan@Deltapacificbev.com",cad:"About monthly, mid-week (guess)",g:2},
+ REPR:{n:"RepRally",m:"email",c:"Sie",e:"siesavagechambers@gmail.com",cad:"",g:2},
+ HLTR:{n:"HL Trading Company",m:"email",c:"",e:"",cad:"",g:2},
+ ALTA:{n:"Altamont",m:"email",c:"Jake",e:"jake@altamontbeerworks.com",cad:"About monthly, late month, Tue/Thu (guess)",g:3},
+ ALAM:{n:"Alameda Brewing",m:"email",c:"Anthony",e:"",cad:"Tuesdays, every 4–6 weeks (guess)",g:3},
+ EPID:{n:"Epidemic Ales",m:"email",c:"Jordan",e:"Holly@epidemicales.com",cad:"Every 4–8 weeks, mid-week (guess)",g:3},
+ DELC:{n:"Del Cielo Brewery",m:"email",c:"Dave",e:"Saleseast@delcielobrewing.com",cad:"About monthly, Tue/Thu (guess)",g:3},
+ WEST:{n:"Western Flyer",m:"email",c:"Matthew",e:"Matt@wfbrewing.com",cad:"",g:3},
+ "5SUN":{n:"5 Suns",m:"email",c:"",e:"",cad:"About every 2 months, Thursday (guess)",g:3},
+ SAMS:{n:"Sam's Club",m:"store",c:"",e:"",cad:"As needed",g:4},
+ NONE:{n:"No vendor assigned",m:"none",c:"",e:"",cad:"—",g:5},
+ TITL:{n:"Titleist",m:"email",c:"Ted",e:"",cad:"Monthly",g:6},VWGO:{n:"VW Golf",m:"email",c:"Jackie",e:"",cad:"Monthly",g:6}
+};
+const METHOD={portal:"Order online",email:"Email",store:"Store run",none:"No vendor"};
+const GROUPS=[['portal','Order online'],['email','Email the rep'],['store','Store run'],['none','Needs a vendor in Lightspeed']];
+const CAT={ALC:"Alcohol",NA:"Non-alcoholic",SNK:"Snacks",MER:"Merch"};
+const fmt=n=>n.toLocaleString('en-US');const usd=n=>'$'+Math.round(n).toLocaleString('en-US');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const WEEK_OF='Nov 9, 2026';const KEY='orderRun-simple-2026-11-03';
+const items=DATA.items.map((a,i)=>{const it={id:i,n:a[0],v:a[1],c:a[2],s:a[3],w4:a[4],d7:a[5],par:a[6],rep:a[8],t:a[9],pk:a[10],wk:Math.round(a[4]/4*10)/10};it.keg=/KEG/.test(it.n);
+ let need=it.rep?Math.min(it.par,Math.max(it.d7,Math.round(it.wk))):it.par-it.s;let cs=0;
+ if(need>0){cs=Math.ceil(need/it.pk);if(!it.rep&&need<0.3*it.pk)cs=0;cs=Math.min(cs,Math.max(1,Math.floor(4*it.wk/it.pk)))}
+ it.ord=cs;return it}).filter(i=>i.ord>0);
+let st={};try{st=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+const q=i=>st['q'+i.id]!=null?st['q'+i.id]:i.ord;
+const done=v=>!!st['d_'+v];
+const lines=v=>items.filter(i=>i.v===v&&q(i)>0).sort((a,b)=>b.w4-a.w4);
+const allLines=v=>items.filter(i=>i.v===v).sort((a,b)=>b.w4-a.w4);
+const vendors=Object.keys(V).filter(v=>allLines(v).length);
+const caseWord=(n,i)=>i.keg?(n===1?'keg':'kegs'):(n===1?'case':'cases');
+const orderText=v=>lines(v).map(i=>`${q(i)} ${caseWord(q(i),i)} - ${i.n}${i.keg?'':' ('+i.pk+'pk)'}`).join('\n');
+const email=v=>{const x=V[v];return {to:x.e||'',subject:`Skylinks order – week of ${WEEK_OF}`,body:`Hi ${x.c||'there'},\n\nHere is Skylinks at Buchanan Fields' order for the week of ${WEEK_OF}:\n\n${orderText(v)}\n\nPlease reply to confirm availability and your delivery day.\n\nThanks,\nLC Torres\nOperations Lead, Skylinks Golf\nlc@skylinksgolf.com`}};
+const gmail=m=>'https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(m.to)+'&su='+encodeURIComponent(m.subject)+'&body='+encodeURIComponent(m.body);
+const open={};
+
+/* tabs */
+function show(p){document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.p===p));document.querySelectorAll('section.panel').forEach(s=>s.hidden=s.id!=='p-'+p);window.scrollTo(0,0);}
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>show(b.dataset.p));
+
+/* order */
+function summary(){const tot=vendors.reduce((s,v)=>s+lines(v).reduce((a,i)=>a+q(i),0),0);const d=vendors.filter(done).length;
+ document.getElementById('sumBig').textContent=`${d} of ${vendors.length} vendors done`;
+ document.getElementById('sumSub').textContent=`${fmt(tot)} cases suggested this week`}
+function detailHtml(v){const x=V[v];let em='';
+ if(x.m==='email'){const m=email(v);em=`<div class="emailbox" style="padding:12px 0"><div class="emf"><span class="lab">To</span><span>${m.to?esc(m.to):'<span class="neg">No email on file yet</span>'}</span><span></span></div><div class="emf"><span class="lab">Subject</span><span>${esc(m.subject)}</span><span></span></div><textarea class="embody" readonly aria-label="Email">${esc(m.body)}</textarea><div class="emfoot"><a class="btn go" href="${gmail(m)}" target="_blank" rel="noopener">Open in Gmail</a><button class="btn ghost" data-copy="${v}">Copy email</button><span class="note">Review it in Gmail and press Send yourself.</span></div></div>`}
+ return `${em}<div class="tbl-wrap"><table><thead><tr><th>Item</th><th class="num">Last wk</th><th class="num">Avg/wk</th><th class="num">Cases</th></tr></thead><tbody>${allLines(v).map(i=>`<tr><td class="item">${esc(i.n)} <span class="note">${i.keg?'keg':i.pk+'pk'}</span></td><td class="num">${i.d7}</td><td class="num">${i.wk}</td><td class="num"><input class="qty" type="number" min="0" id="q-${i.id}" data-id="${i.id}" value="${q(i)}" aria-label="Cases"></td></tr>`).join('')}</tbody></table></div>`}
+function render(){const el=document.getElementById('vlist');let h='';
+ for(const [g,label] of GROUPS){const vs=vendors.filter(v=>V[v].m===g);if(!vs.length)continue;h+=`<div class="grp">${label}</div>`;
+  for(const v of vs){const x=V[v];const n=lines(v).reduce((a,i)=>a+q(i),0);
+   let btn='';if(g==='portal')btn=x.url?`<a class="btn go" href="${x.url}" target="_blank" rel="noopener" data-go="${v}">Copy &amp; open portal</a>`:`<button class="btn go" data-go="${v}">Copy order</button>`;else if(g==='email')btn=`<button class="btn go" data-em="${v}">Write email</button>`;else if(g==='store')btn=`<button class="btn go" data-go="${v}">Copy list</button>`;
+   h+=`<div class="vrow ${done(v)?'done':''}" data-v="${v}"><div class="vline"><div class="nm"><span class="dot ${g}"></span>${esc(x.n)}<small>${lines(v).length} items${x.cad&&x.cad!=='—'?' · '+esc(x.cad):''}</small></div><div class="cs"><b>${n}</b> ${n===1?'case':'cases'}</div><div class="acts">${btn}<button class="lnk" data-tog="${v}">${open[v]?'Hide items':'See items'}</button><label class="placed"><input type="checkbox" data-done="${v}" ${done(v)?'checked':''}> Done</label></div></div><div class="detail" ${open[v]?'':'hidden'}>${open[v]?detailHtml(v):''}</div></div>`}}
+ el.innerHTML=h;summary();
+ el.querySelectorAll('[data-tog]').forEach(b=>b.onclick=()=>{open[b.dataset.tog]=!open[b.dataset.tog];render()});
+ el.querySelectorAll('[data-done]').forEach(c=>c.onchange=()=>{st['d_'+c.dataset.done]=c.checked;save();render()});
+ el.querySelectorAll('[data-em]').forEach(b=>b.onclick=()=>{open[b.dataset.em]=true;render()});
+ el.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>copy(email(b.dataset.copy).body,b));
+ el.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{const v=b.dataset.go;copy(`${V[v].n.toUpperCase()} – week of ${WEEK_OF}\n`+orderText(v),b,true)}));
+ el.querySelectorAll('input.qty').forEach(inp=>inp.onchange=()=>{st['q'+inp.dataset.id]=Math.max(0,parseInt(inp.value||'0',10));save();const v=items.find(i=>i.id==inp.dataset.id).v;const row=el.querySelector(`.vrow[data-v="${v}"]`);row.querySelector('.cs b').textContent=lines(v).reduce((a,i)=>a+q(i),0);summary()});}
+function copy(t,btn,keepLabel){const done_=()=>{if(keepLabel)return;const o=btn.textContent;btn.textContent='Copied';setTimeout(()=>btn.textContent=o,1500)};const fb=()=>{const w=document.getElementById('copyWrap');w.hidden=false;const b=document.getElementById('copybox');b.value=t;b.focus();b.select()};try{navigator.clipboard.writeText(t).then(done_,fb)}catch(e){fb()}}
+render();
+
+/* sales */
+(function(){const k=document.getElementById('kpis');['ALC','NA','SNK','MER'].forEach(c=>{const t=DATA.cats[c];const avg=t.r4/4;const d=Math.round((t.r7/avg-1)*100);k.insertAdjacentHTML('beforeend',`<div class="kpi"><div class="l">${CAT[c]}</div><div class="v">${usd(t.r7)}</div><div class="s">${fmt(t.u7)} sold · avg week ${usd(avg)}</div><div class="s delta ${d>=0?'up':'down'}">${d>=0?'▲':'▼'} ${Math.abs(d)}% vs avg</div></div>`)});
+ const tp=document.getElementById('tops');['ALC','NA','SNK'].forEach(c=>tp.insertAdjacentHTML('beforeend',`<div><h3>Top 5 · ${CAT[c]}</h3><ol class="top short">${DATA.top[c].slice(0,5).map((r,i)=>`<li><span class="rk">${i+1}</span><span>${esc(r[0])}</span><span class="q">${r[1]} sold</span></li>`).join('')}</ol></div>`))})();
+
+/* ideas */
+(function(){const b=DATA.bs;const per=k=>b[k]&&b[k].n?Math.round(b[k].u/b[k].n):0;
+ const recs=[
+  ['keep','Keep',`Mexican lagers and domestic light beer move ${per('Mexican lager')} units per item vs ${per('IPA & hazy')} for IPAs. Never run out of Coors Light, Modelo, Pacifico and Twisted Tea.`],
+  ['cut','Trim',`${b['IPA & hazy'].n} different IPAs and hazies is too many. Keep a set number of craft spots and swap the slowest one instead of adding.`],
+  ['add','Add',`Canned cocktails (Sabe, Flybird) sell steadily. Good case for a second cocktail fridge.`],
+  ['cut','Trim',`Non-alcoholic beer: ${b['Non-alcoholic beer'].n} items sold ${b['Non-alcoholic beer'].u} total in 4 weeks. Keep the best 3.`],
+  ['watch','Check',`Shooter counts look far too high (Fireball 50ml shows 2,680). Hold shooter orders until a count.`]];
+ document.getElementById('recs').innerHTML=recs.map(r=>`<li><span class="k ${r[0]}">${r[1]}</span><span>${esc(r[2])}</span></li>`).join('');
+ const list=(title,why,rows)=>`<div><h3 style="margin-bottom:2px">${title}</h3><p class="note" style="margin:0 0 8px">${why}</p><ol class="top short">${rows.join('')}</ol></div>`;
+ const li=(n,q)=>`<li><span class="rk">•</span><span>${esc(n)}</span><span class="q">${q}</span></li>`;
+ document.getElementById('ideaLists').innerHTML=
+  list('Selling faster','Give more space or order extra.',DATA.up.slice(0,5).map(r=>li(r[0],`${r[2]} last wk`)))+
+  list('Check the shelf','Usually sells but barely sold last week. Probably out of stock.',DATA.down.slice(0,5).map(r=>li(r[0],`${r[2]} vs ${r[3]}/wk`)))+
+  list('Consider cutting','Sold 2 or fewer in 4 weeks.',DATA.slow.filter(r=>!/^(TITL|VWGO)$/.test(r[1])).slice(0,5).map(r=>li(r[0],`${r[3]} sold`)));})();
+show('sales');
+</script>
