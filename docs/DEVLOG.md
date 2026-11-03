@@ -5,6 +5,54 @@ reasoning behind non-obvious calls. Newest entries at the top.
 
 ---
 
+## 2026-10-01 — Stripe report: Stripe App + extension save tool
+
+**Decision:** build the data side as a private Stripe App (public API as the signed-in
+user, no keys/backend) and keep the extension for what the app can't do: save a CSV file.
+Handoff is clipboard → paste box, validated against a fixed header contract.
+
+**Extension changes (uncommitted):** `content/stripe.js` rewritten as "Save Stripe Report"
+(paste → validate → preview → download, no network calls); `download.csvButton` gained an
+opt-in `bom` flag for Excel; `manifest.json` adds `dashboard.stripe.com` + bumps to 1.6;
+`popup.js` registers the button. Reverted the earlier `stripe` block in `core/config.js`
+(no API base URL is needed any more).
+
+**Follow-up (same day):** refunded/disputed rows stay in (flagged); added a Net column
+(`balance_transaction.net`) — CSV contract bumped to v2 in both repos.
+
+**Found in passing:** `core/dates.js` `pacificMidnightUTC` samples the offset at noon UTC,
+so on the two DST-switch days it's an hour off (window starts 07:00Z instead of 08:00Z in
+March, and vice versa in November). The Stripe App samples at 08:00Z instead. Not fixed
+here — affects the Lightspeed/SelectPi/PV reports on those two days only.
+
+---
+
+## 2026-10-01 — Stripe daily transactions report (scaffold)
+
+**Ask:** Sandy wants a one-day report of successful Stripe payments: amount, payment
+date, customer first/last name, estimated payout/deposit date (default: today).
+
+**Decision:** stay on the browser-session pattern (content script on the logged-in
+`dashboard.stripe.com`) rather than the public Stripe API — consistency with the tools
+Sandy already uses outweighs having a documented API.
+
+**Done:** scaffolded `content/stripe.js` (modal, Pacific-day window, row/column spec,
+fetch stubbed to throw), added a `stripe` block to `content/core/config.js`
+(`apiBaseUrl: null`), left a commented-out `popup.js` entry, no manifest change yet.
+Spec, open questions for Sandy, and the Claude in Chrome RE runbook live in
+`tasks/stripe_daily_transactions.md`; findings template in `docs/api_refs/stripe.md`.
+
+**Watch:** if the dashboard's API credential only lives in page JS memory, the
+ISOLATED-world injection used everywhere else won't reach it — that would need
+`world: 'MAIN'`, a new pattern here. Decide explicitly before building.
+
+**RE run result (same day):** it does. Session cookies alone get a hung request and
+then a 503 on `/v1/`. The dashboard authenticates with a session credential held in page
+memory, and we decided not to lift it into the extension. The browser-session pattern is a
+dead end for Stripe. Options are in `docs/api_refs/stripe.md` §7.
+
+---
+
 ## 2026-09-18 — Retail customer type sync feature; git stale-checkout cleanup
 
 **Trigger:** Ian reported the Lightspeed customer import feature "seems to have rolled

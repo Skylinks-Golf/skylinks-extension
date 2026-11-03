@@ -2,7 +2,7 @@
 
   const BATCH_SIZE = 3;
   const BATCH_DELAY_MS = 500;
-  const { TD, TH, escHtml, escCsv, makeLogger, createModal, apiClient, paginate, csv, download, dom, runPreflight, SkylinksError } = window.SkylinksUtils;
+  const { TD, TH, escHtml, escCsv, makeLogger, createModal, apiClient, paginate, csv, download, dom, runPreflight, SkylinksError, extractErrorMessage } = window.SkylinksUtils;
   const log = makeLogger('CG Import');
 
   // SGC Topsheet column → API field mapping
@@ -109,6 +109,16 @@
   // Player type is NOT a customer field — it's set via a separate affiliation
   // call after create (see attachAffiliation). Address must be nested under
   // `address` with the server's `postcode` key (not the form's `post_code`).
+  // A DOB that is malformed, future-dated, or 100+ years old is almost always a
+  // typo in the signup form. Sending it gets the whole row rejected (422), so we
+  // omit it and flag the row instead of failing the member's import.
+  function isSaneDob(dob) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dob || '')) return false;
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const oldestSaneISO = `${new Date().getFullYear() - 100}-01-01`;
+    return dob <= todayISO && dob >= oldestSaneISO;
+  }
+
   function buildPayload(row) {
     const customer = {
       club_id: parseInt(CLUB_ID, 10),
@@ -118,7 +128,7 @@
     };
     if (row.phone) customer.phone = normalizePhone(row.phone);
     if (row.gender) customer.gender = parseInt(row.gender, 10);
-    if (row.date_of_birth) customer.date_of_birth = row.date_of_birth;
+    if (row.date_of_birth && isSaneDob(row.date_of_birth)) customer.date_of_birth = row.date_of_birth;
     const memberNo = row.ghin || row.member_no;
     if (memberNo) customer.member_no = memberNo;
     if (row.bag_number) customer.bag_number = row.bag_number;
@@ -166,13 +176,8 @@
 
     if (!r.ok) {
       const text = await r.text().catch(() => '');
-      let msg = `HTTP ${r.status}`;
-      try {
-        const data = JSON.parse(text);
-        msg = data.errors ? data.errors.map(e => e.message).join('; ') : (data.error?.message || msg);
-      } catch (_) {
-        if (text) msg += ` — ${text.slice(0, 120)}`;
-      }
+      const reason = extractErrorMessage(text);
+      const msg = reason ? `HTTP ${r.status}: ${reason}` : `HTTP ${r.status}`;
       log(`POST failed ${r.status}:`, msg);
       return { success: false, status: r.status, message: msg };
     }
@@ -221,7 +226,7 @@
 
     if (row.phone) customer.phone = normalizePhone(row.phone);
     if (row.gender) customer.gender = parseInt(row.gender, 10);
-    if (row.date_of_birth) customer.date_of_birth = row.date_of_birth;
+    if (row.date_of_birth && isSaneDob(row.date_of_birth)) customer.date_of_birth = row.date_of_birth;
     const memberNo = row.ghin || row.member_no;
     if (memberNo) customer.member_no = memberNo;
     if (row.bag_number) customer.bag_number = row.bag_number;
@@ -231,22 +236,50 @@
       customer.address = { ...(customer.address || {}), ...addressPatch };
     }
 
+    // Doc §3a: the app round-trips the object it read MINUS these read-only fields;
+    // sending them back is rejected with 422. Strip on a copy — current_affiliation
+    // and player_type_locked_by_subscription are still needed below.
+    const READ_ONLY_FIELDS = [
+      'activation_state', 'ref', 'last_login_at', 'last_activity_at',
+      'affiliation_type_id', 'affiliation_type_ids', 'current_affiliation', 'affiliations',
+      'custom_fields_data', 'photo', 'membership_start_date', 'membership_end_date',
+    ];
+    const payload = { ...customer };
+    READ_ONLY_FIELDS.forEach(k => delete payload[k]);
+
+    // Profiles staff created at the counter often have no email. Fill it from
+    // the signup so future imports match by email. The edit drawer locks email
+    // on existing customers, so the API may refuse this — if it does, retry
+    // without it rather than failing the whole update.
+    const notes = [];
+    const fillEmail = !customer.email && row.email;
+    if (fillEmail) payload.email = row.email;
+
+    const putUrl = `/private_api/clubs/${CLUB_ID}/customers/${customerId}`;
     try {
-      await api.put(`/private_api/clubs/${CLUB_ID}/customers/${customerId}`, { customer });
+      await api.put(putUrl, { customer: payload });
     } catch (e) {
-      return { success: false, message: `Profile update failed: ${e.message}` };
+      if (!fillEmail) return { success: false, message: `Profile update failed: ${e.message}` };
+      log(`Email fill refused for ${customerId} (${e.message}) — retrying without email.`);
+      delete payload.email;
+      try {
+        await api.put(putUrl, { customer: payload });
+        notes.push('email not saved to profile — add it manually');
+      } catch (e2) {
+        return { success: false, message: `Profile update failed: ${e2.message}` };
+      }
     }
 
     const desiredTypeId = row.affiliation_type_id ? parseInt(row.affiliation_type_id, 10) : null;
-    if (!desiredTypeId) return { success: true, playerTypeUpdated: false };
+    if (!desiredTypeId) return { success: true, playerTypeUpdated: false, notes };
 
     if (customer.player_type_locked_by_subscription) {
-      return { success: true, playerTypeUpdated: false, playerTypeNote: 'locked by subscription' };
+      return { success: true, playerTypeUpdated: false, playerTypeNote: 'locked by subscription', notes };
     }
 
     const current = customer.current_affiliation;
     if (current && current.affiliation_type_id === desiredTypeId) {
-      return { success: true, playerTypeUpdated: false };
+      return { success: true, playerTypeUpdated: false, notes };
     }
 
     const type = affiliationTypesById[desiredTypeId];
@@ -278,10 +311,10 @@
           },
         });
       }
-      return { success: true, playerTypeUpdated: true };
+      return { success: true, playerTypeUpdated: true, notes };
     } catch (e) {
       log('Affiliation update failed:', e.message);
-      return { success: true, playerTypeUpdated: false, playerTypeNote: e.message };
+      return { success: true, playerTypeUpdated: false, playerTypeNote: e.message, notes };
     }
   }
 
@@ -296,6 +329,33 @@
       return match ? match.id : null;
     } catch (e) {
       log('Customer lookup by email failed:', e.message);
+      return null;
+    }
+  }
+
+  // Fallback match for profiles with no (or a different) email — typically
+  // created by staff at the counter. Phone alone isn't a safe key (households
+  // share numbers), so a hit must also match last name exactly and first name
+  // exactly or by prefix (Monty/Montgomery). Exactly one such hit, or no match.
+  async function findCustomerIdByPhoneAndName(row) {
+    const digits = normalizePhone(row.phone || '');
+    if (digits.length < 7) return null;
+    const norm = s => String(s || '').toLowerCase().trim();
+    const first = norm(row.first_name), last = norm(row.last_name);
+    try {
+      const q = `((user.phone:${digits}))`;
+      const hits = await api.get(`/private_api/clubs/${CLUB_ID}/customers`, { query: { club_id: CLUB_ID, page: 1, q } });
+      if (!Array.isArray(hits)) return null;
+      const matches = hits.filter(c => {
+        if (normalizePhone(c.phone || '') !== digits) return false;
+        if (norm(c.last_name) !== last) return false;
+        const f = norm(c.first_name);
+        return f === first || (f && first && (f.startsWith(first) || first.startsWith(f)));
+      });
+      if (matches.length > 1) log(`Phone+name lookup for row ${row._lineNumber} matched ${matches.length} profiles — not auto-matching.`);
+      return matches.length === 1 ? matches[0].id : null;
+    } catch (e) {
+      log('Customer lookup by phone failed:', e.message);
       return null;
     }
   }
@@ -362,11 +422,18 @@
 
   async function loadExistingCustomers() {
     try {
+      // per_page=100 isn't confirmed to be honoured (doc §0 says 25/page). Use
+      // the first page's size as the page size so a silently-ignored per_page
+      // doesn't stop the index after 25 customers.
+      let pageSize = null;
       const customers = await paginate({
         fetchPage: cur => api.get(`/private_api/clubs/${CLUB_ID}/customers?page=${cur}&per_page=100`),
         start: 1,
         getItems: r => Array.isArray(r) ? r : [],
-        hasMore: (_, items) => items.length === 100,
+        hasMore: (_, items) => {
+          if (pageSize === null) pageSize = items.length;
+          return items.length > 0 && items.length >= pageSize;
+        },
         nextCursor: cur => cur + 1,
       });
       existingCustomersByEmail = new Map(
@@ -427,9 +494,9 @@
           issues.push({ type: 'warn', msg: `Row ${row._lineNumber}: ${errs.join(', ')}` });
         }
         if (row.date_of_birth && !DOB_RE.test(row.date_of_birth)) {
-          issues.push({ type: 'warn', msg: `Row ${row._lineNumber}: birthdate "${row.date_of_birth}" isn't a valid date — it will likely be rejected or dropped.` });
+          issues.push({ type: 'warn', msg: `Row ${row._lineNumber}: birthdate "${row.date_of_birth}" isn't a valid date — it won't be sent.` });
         } else if (row.date_of_birth && (row.date_of_birth > todayISO || row.date_of_birth < oldestSaneISO)) {
-          issues.push({ type: 'warn', msg: `Row ${row._lineNumber}: birthdate ${row.date_of_birth} looks wrong (future-dated or 100+ years ago) — verify the source data.` });
+          issues.push({ type: 'warn', msg: `Row ${row._lineNumber}: birthdate ${row.date_of_birth} looks wrong (future-dated or 100+ years ago) — it won't be sent; fix it in Airtable.` });
         }
         if (row.ghin && row.member_no && row.ghin !== row.member_no) {
           issues.push({ type: 'warn', msg: `Row ${row._lineNumber}: GHIN "${row.ghin}" and member_no "${row.member_no}" disagree — GHIN will be used as the member number.` });
@@ -507,12 +574,21 @@
 
     const results = { created: [], updated: [], skipped: [], failed: [] };
 
-    async function handleUpdate(existingId, row, name) {
+    // DOB sanity notes, shared by create + update paths.
+    function dobNote(row) {
+      return row.date_of_birth && !isSaneDob(row.date_of_birth)
+        ? `birthdate ${row.date_of_birth} looks wrong — not sent, fix in Airtable`
+        : '';
+    }
+
+    async function handleUpdate(existingId, row, name, matchNote = '') {
       const result = await updateExistingCustomer(existingId, row);
       if (result.success) {
-        const note = result.playerTypeUpdated === false && row.affiliation_type_id
-          ? (result.playerTypeNote ? `player type not updated: ${result.playerTypeNote}` : '')
-          : '';
+        const parts = [matchNote, dobNote(row), ...(result.notes || [])];
+        if (result.playerTypeUpdated === false && row.affiliation_type_id && result.playerTypeNote) {
+          parts.push(`player type not updated: ${result.playerTypeNote}`);
+        }
+        const note = parts.filter(Boolean).join('; ');
         log(`UPDATED row ${row._lineNumber} (${name}) → ID: ${existingId}${note ? ' — ' + note : ''}`);
         results.updated.push({ row: row._lineNumber, name, id: existingId, note });
       } else {
@@ -547,6 +623,15 @@
             return;
           }
 
+          // No email match — check for a profile with no/different email before
+          // creating, so we update it instead of making a duplicate.
+          const phoneMatchId = await findCustomerIdByPhoneAndName(row);
+          if (phoneMatchId) {
+            log(`Row ${row._lineNumber} (${name}) matched existing ID ${phoneMatchId} by phone + name — updating.`);
+            await handleUpdate(phoneMatchId, row, name, 'matched by phone + name (email not on profile)');
+            return;
+          }
+
           const created = await createCustomer(buildPayload(row));
           if (!created.success) {
             const isDuplicate = created.status === 422 && /already/i.test(created.message || '');
@@ -558,17 +643,21 @@
                 await handleUpdate(foundId, row, name);
                 return;
               }
+              log(`Row ${row._lineNumber} (${name}) rejected as existing, but no profile found by email or phone + name — needs manual review.`);
+              results.failed.push({ row: row._lineNumber, name, error: `${created.message} — no matching profile found by email or phone + name; find and update manually` });
+              return;
             }
             log(`FAILED row ${row._lineNumber} (${name}) → ${created.status}: ${created.message}`);
             results.failed.push({ row: row._lineNumber, name, error: created.message });
             return;
           }
 
-          let note = '';
+          const noteParts = [dobNote(row)];
           if (row.affiliation_type_id) {
             const attach = await attachAffiliation(created.id, parseInt(row.affiliation_type_id, 10));
-            if (!attach.success) note = `player type not set: ${attach.message}`;
+            if (!attach.success) noteParts.push(`player type not set: ${attach.message}`);
           }
+          const note = noteParts.filter(Boolean).join('; ');
           log(`CREATED row ${row._lineNumber} (${name}) → ID: ${created.id}${note ? ' — ' + note : ''}`);
           results.created.push({ row: row._lineNumber, name, id: created.id, ref: created.ref, note });
         }));
