@@ -1,6 +1,15 @@
-# AGENTS.md — Skylinks Tools Extension
+# AGENTS.md — Skylinks Extension Repo
 
 Agent-facing entry point for this repo. Read this first.
+
+## This repo is the home for Skylinks browser tools and shared Artifacts
+
+- **Chrome extension** lives in `extension/`. This is the **only** Skylinks Chrome extension. Add new browser tools here (as a per-site content script plus a `popup.js` entry); do not start or maintain a separate extension elsewhere.
+- **Shared claude.ai Artifacts** live in `artifacts/`. See `artifacts/README.md`.
+- Everyone (admins, LC, Ian, and their agents) works on a `<initials>/<topic>` branch and opens a PR. Never push to `main`; agents commit or push only when asked.
+- Never commit secrets, card data, payroll, or customer/member PII, including "example" exports. Use synthetic sample data.
+
+Paths below are relative to `extension/` unless they start with `artifacts/`.
 
 ## What this is
 
@@ -40,9 +49,8 @@ content/
   tee_sheet_export.js     # Chronogolf tee sheet CSV export
   vendor/chart.umd.min.js # Vendored Chart.js
 icons/                   # Toolbar icons (16/24/32/48/128)
-docs/                    # Vendor API references, walkthroughs, example exports
+docs/                    # Vendor API references and walkthroughs (no real data)
 tasks/                   # Completed/in-flight task notes (project history, not app code)
-artifacts/               # Shared claude.ai Artifacts (not part of the extension) — see artifacts/README.md
 ```
 
 ## Key entry points
@@ -57,7 +65,7 @@ artifacts/               # Shared claude.ai Artifacts (not part of the extension
 There is no build step and no test suite for this app.
 
 - **Install/build**: none — the extension runs directly from source files.
-- **Load unpacked** (how staff/devs run it): open `chrome://extensions`, enable Developer mode, click "Load unpacked", select this `apps/skylinks-extension` folder. Reload the extension after editing any file to pick up changes.
+- **Load unpacked** (how staff/devs run it): open `chrome://extensions`, enable Developer mode, click "Load unpacked", select the `extension/` folder of this repo. Reload the extension after editing any file to pick up changes.
 - **Test**: none exists. Verify changes manually by loading unpacked and exercising the relevant tool button on the real (or a sandbox) vendor site.
 - Repo-root workspace scripts (`npm run sle:*` at `C:\data\skylinks\package.json`) manage the overall Skylinks Local Ecosystem/submodules, not this app specifically.
 
@@ -84,6 +92,4 @@ This repo also holds the team's shared claude.ai Artifacts, one folder per artif
 
 ## For AI agents working here
 
-Org-wide rules for this repo owner's environment also apply — see the repo root `CLAUDE.md` at `C:\data\skylinks\CLAUDE.md`. (That file still carries some of the same legacy content described below and is being cleaned up separately — don't edit it as part of work in this app.)
-
-See [KOADOS.md](KOADOS.md) for the (WIP) legacy agent-tooling framework this repo previously used.
+Skylinks org instructions also apply. This repo's guidance is this file; `CLAUDE.md` just points here. Other agent tools (Gemini, Cursor, etc.) are no longer configured in this repo; use this file as the shared source.

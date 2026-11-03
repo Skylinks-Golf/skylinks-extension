@@ -21,7 +21,7 @@ with no shared customer ID:
 ## Flow
 
 Both the Golf import and the Retail sync are driven from the same SGC Topsheet CSV
-(`docs/sgc_topsheet_example.csv`: Email, Membership Tier, …), run as two separate manual
+(`docs/examples/sgc_topsheet_example.csv` (synthetic): Email, Membership Tier, …), run as two separate manual
 steps (Golf import first, then Retail sync) — content scripts can't call cross-origin
 from one tab to the other, so there's no way to chain them into a single live operation.
 
