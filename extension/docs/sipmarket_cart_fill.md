@@ -1,6 +1,6 @@
 # Proposal: fill vendor carts from the order run (SipMarket first)
 
-**Status:** proposal, not built. **Requested by:** LC. **Date:** 2026-11-04.
+**Status:** approved by Ian, being built on `dev-lc`, not on `main` yet. **Requested by:** LC. **Date:** 2026-11-04.
 
 ## Problem
 
@@ -29,8 +29,10 @@ Move cart filling into the extension so it runs locally with no Claude usage, st
 - Fills carts only. Staff review and place every order; ordering decisions stay with Brandon (PROTOCOLS.md §3).
 - No passwords, no credentials stored, nothing submitted or sent automatically.
 
-## Questions for Ian
+## Decisions (Ian, 2026-11-04)
 
-- OK to add the SipMarket host permission?
-- Should the SKU map live in `orders/config.js` or its own file?
-- Is a cart-fill tool fine under the "drafts only" rule, given it stops before checkout?
+- **Host permission:** yes, `https://www.sipmarket.com/*` only, added as part of the build.
+- **SKU map:** its own file under `orders/`, not `orders/config.js`. It holds SKUs and item names only, with no prices or invoice details, because this repo is public.
+- **"Drafts only" rule:** fine, because it stops before checkout. It writes to a live vendor site, so it shows the items and quantities first, gets confirmation from the person running it, and is tested with one item before a full order. Emptying the cart is the undo.
+
+LC can build and test all of this without checking in. See `PROTOCOLS.md` section 1 for the limits. Other portals come after this one is merged.
