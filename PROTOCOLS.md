@@ -18,7 +18,7 @@ Rules for anyone changing this repo, and for the AI agents working with them. Ag
 - **Never commit:** passwords, API keys, tokens, card data, bank details, payroll or HR data, customer or member PII, signed waivers, incident or safety records. This includes "example" exports and screenshots.
 - Sample data is synthetic: `jane@example.com`, `555-0100`, made-up names. Prefer totals over lists of names.
 - Cards: last four only. If anyone pastes a secret or full card number into the chat, stop and tell them to remove it (and rotate it if it is a credential).
-- Third-party contact details (vendor reps, personal email addresses, phone numbers) should not live in the repo. Load them at runtime from the shared source instead, or ask Ian first.
+- Third-party contact details (vendor reps, personal email addresses, phone numbers) do not belong in the repo, with one decision on record: Ian approved keeping the **vendor rep business contacts** (name, email, phone) in `extension/orders/config.js` and the Order Run Artifact (2026-11-04). Don't treat those as a problem. Don't add other contacts, customer contacts, or new personal email addresses without asking Ian.
 - Keep payroll and customer data apart. Don't combine them in one report or file.
 - If anything has been committed that should not have been, say so right away. Ian decides on history cleanup and notification.
 
