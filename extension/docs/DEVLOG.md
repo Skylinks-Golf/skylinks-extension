@@ -11,7 +11,7 @@ reasoning behind non-obvious calls. Newest entries at the top.
 user, no keys/backend) and keep the extension for what the app can't do: save a CSV file.
 Handoff is clipboard → paste box, validated against a fixed header contract.
 
-**Extension changes (uncommitted):** `content/stripe.js` rewritten as "Save Stripe Report"
+**Extension changes (merged in 1.6):** `content/stripe.js` rewritten as "Save Stripe Report"
 (paste → validate → preview → download, no network calls); `download.csvButton` gained an
 opt-in `bom` flag for Excel; `manifest.json` adds `dashboard.stripe.com` + bumps to 1.6;
 `popup.js` registers the button. Reverted the earlier `stripe` block in `core/config.js`
@@ -40,7 +40,7 @@ Sandy already uses outweighs having a documented API.
 fetch stubbed to throw), added a `stripe` block to `content/core/config.js`
 (`apiBaseUrl: null`), left a commented-out `popup.js` entry, no manifest change yet.
 Spec, open questions for Sandy, and the Claude in Chrome RE runbook live in
-`tasks/stripe_daily_transactions.md`; findings template in `docs/api_refs/stripe.md`.
+`docs/history/stripe_daily_transactions.md`; findings template in `docs/api_refs/stripe.md`.
 
 **Watch:** if the dashboard's API credential only lives in page JS memory, the
 ISOLATED-world injection used everywhere else won't reach it — that would need

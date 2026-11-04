@@ -50,7 +50,7 @@ content/
   vendor/chart.umd.min.js # Vendored Chart.js
 icons/                   # Toolbar icons (16/24/32/48/128)
 docs/                    # Vendor API references and walkthroughs (no real data)
-tasks/                   # Completed/in-flight task notes (project history, not app code)
+docs/history/             # Old specs, plans and reviews (project history, not current guidance; may be out of date)
 ```
 
 ## Key entry points
