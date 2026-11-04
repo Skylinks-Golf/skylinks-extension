@@ -1,6 +1,6 @@
 # Stripe — Daily Successful Transactions Report
 
-**Status (2026-10-01):** Building. Extension side done (uncommitted). Stripe App source written
+**Status (2026-10-01):** Building. Extension side done (merged, v1.6). Stripe App source written
 and unit-tested; waiting on `stripe apps create` (Ian) before it lands in `apps/skylinks-stripe-app`.
 **Requested by:** Sandy (accounting, Stripe role: Administrator) · **Owner:** Ian
 

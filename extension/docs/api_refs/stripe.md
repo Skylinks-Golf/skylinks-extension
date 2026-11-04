@@ -60,4 +60,4 @@ over to Stripe. Options, in rough order of effort:
 **Decision (2026-10-01):** option 2 — a private Stripe App builds the report, and the extension's
 **Save Stripe Report** tool saves it as CSV via a clipboard handoff. Sandy is a Stripe
 Administrator, so the app's user-scoped API calls have the access they need. Plan and contract:
-`tasks/stripe_daily_transactions.md`.
+`docs/history/stripe_daily_transactions.md`.
