@@ -40,6 +40,6 @@ The log holds the last 500 events: which tool ran, which requests failed, row nu
 ## Contributing
 
 - Start from current `main`, work on a new `<initials>/<topic>` branch, and open a pull request to `main`. Ian reviews it, and the repo checks must pass. Never push to `main`.
-- Not a developer? You can still make changes with Claude. Open this repo with your Claude agent and describe what you want. It follows [PROTOCOLS.md](PROTOCOLS.md) and handles the git steps. You test the result in Chrome.
+- Not a developer? You can still make changes with Claude. Open this repo with your Claude agent and describe what you want. It follows [PROTOCOLS.md](PROTOCOLS.md) and handles the git steps, or walks you through them in GitHub Desktop if it can't push from where it's running. You test the result in Chrome.
 - Never commit secrets, card data, payroll, or customer/member PII, including "example" exports. Use made-up sample data.
 - Developers and AI agents: read [AGENTS.md](AGENTS.md) first. See [extension/CHANGELOG.md](extension/CHANGELOG.md) for release notes.

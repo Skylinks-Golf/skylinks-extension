@@ -4,7 +4,7 @@ Weekly order run, last week's sales, money (profit and leaks) and add/cut/swap i
 
 - **Owner:** LC Torres (lc@skylinksgolf.com)
 - **Open it:** Skylinks Tools toolbar popup → **Pro Shop Orders** buttons (shown on every site). Each opens `orders/app.html#<tab>` in a new tab.
-- **Read only.** Nothing is ordered, emailed or changed in Lightspeed. "Open vendor tabs & emails" opens portals and pre-filled Gmail compose windows; staff sign in, review and press Submit/Send themselves. Staff may ask Claude to add items to a vendor cart (Brandon agreed, per Ian, 2026-11-04); a person still reviews and submits.
+- **Read only.** Nothing is ordered, emailed or changed in Lightspeed. "Open vendor tabs & emails" opens portals and pre-filled Gmail compose windows; staff sign in, review and press Submit/Send themselves. This page doesn't fill carts: staff add the items themselves for now. A Claude run started from the Order Run Artifact can stop while staff sign in, so it isn't reliable (see the proposal in #18). Claude may add items to a vendor cart at staff's request (Brandon agreed, per Ian, 2026-11-04), and an approver reviews and submits every order (see PROTOCOLS.md section 3).
 
 ## How it differs from the other tools
 
