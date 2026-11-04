@@ -7,6 +7,8 @@ Rules for anyone changing this repo, and for the AI agents working with them. Ag
 ## 1. Git workflow
 
 - Work on a `<initials>/<topic>` branch (`ian/docs-tidy`, `lc/orders-fix`). Open a PR for every change. **Never push to `main`.**
+- Start each change from an up-to-date `main` on a new branch. Every PR targets `main`. Never reuse a branch that has already been merged, and never merge a PR into another feature branch: that is how the logging work in #12 got stranded.
+- Ian reviews and approves everyone else's PRs (`.github/CODEOWNERS`), and the repo checks must pass before anything merges. If a check fails, fix the problem or ask Ian. Don't edit or disable a check to get past it.
 - Agents commit or push only when the user asks. Never create or merge a PR on your own initiative.
 - **Destructive git needs the user to type "approve":** force-push, history rewrite, deleting branches or tags, `reset --hard`, deleting files outside the task, deleting the repo or a local clone. Describe exactly what will be lost first, and keep a backup (for example a bundle) of anything unpushed.
 - Commit messages say what changed and why. One topic per branch and PR. Don't mix refactors with features.
@@ -18,7 +20,7 @@ Rules for anyone changing this repo, and for the AI agents working with them. Ag
 - **Never commit:** passwords, API keys, tokens, card data, bank details, payroll or HR data, customer or member PII, signed waivers, incident or safety records. This includes "example" exports and screenshots.
 - Sample data is synthetic: `jane@example.com`, `555-0100`, made-up names. Prefer totals over lists of names.
 - Cards: last four only. If anyone pastes a secret or full card number into the chat, stop and tell them to remove it (and rotate it if it is a credential).
-- Third-party contact details (vendor reps, personal email addresses, phone numbers) do not belong in the repo, with one decision on record: Ian approved keeping the **vendor rep business contacts** (name, email, phone) in `extension/orders/config.js` and the Order Run Artifact (2026-11-04). Don't treat those as a problem. Don't add other contacts, customer contacts, or new personal email addresses without asking Ian.
+- Third-party contact details (vendor reps, personal email addresses, phone numbers) do not belong in the repo, with one decision on record: Ian approved keeping the **vendor rep contacts** (name, email, phone), including RepRally's personal Gmail, in `extension/orders/config.js` and the Order Run Artifact (2026-11-04). Don't treat those as a problem. Don't add other contacts, customer contacts, or new personal email addresses without asking Ian.
 - Keep payroll and customer data apart. Don't combine them in one report or file.
 - If anything has been committed that should not have been, say so right away. Ian decides on history cleanup and notification.
 
@@ -27,7 +29,7 @@ Rules for anyone changing this repo, and for the AI agents working with them. Ag
 - Tools here **read** from vendor sites through the signed-in staff session. A tool that **changes** a live system (for example Sync Customer Type in Lightspeed) needs the approval path in the Org Instructions: Brandon or LC for Lightspeed Retail customer and inventory edits (not type definitions or pricing rules), Ian for other systems. The tool must show the records, current and proposed values, and an undo path, then wait for explicit confirmation before writing.
 - Nothing goes out automatically: no sending email, Slack posts, payments, calendar changes or website publishing. Tools may open a prefilled draft (such as Gmail compose) for the person to review and send.
 - No GHIN or handicap changes outside approved channels. Never edit signed waivers or incident records.
-- **Ordering goes through Brandon.** Tools that prepare orders produce drafts and recommendations. They don't place orders, and Brandon owns the ordering decision.
+- **Ordering goes through Brandon.** Tools that prepare orders produce drafts and recommendations. They don't place orders, and Brandon owns the ordering decision. Staff may ask Claude to add items to a vendor cart (Brandon agreed, per Ian, 2026-11-04). A person reviews and submits; Claude never submits an order.
 - ProShop Airtable is read-only except for Ian and his agents.
 
 ## 4. Extension conventions
@@ -47,9 +49,9 @@ Details are in [AGENTS.md](AGENTS.md) and `extension/docs/adding_a_new_tool.md`.
 
 ## 5. Before you call something done
 
-There is no automated test suite, so verify by hand and say exactly what you did and did not check.
+The repo checks catch some mistakes, but they can't run the extension, so also verify by hand and say exactly what you did and did not check.
 
-1. Every file `popup.js` and `manifest.json` reference exists.
+1. Run `node scripts/check-repo.js` (no install needed). The same checks run on every PR. They cover syntax, referenced files, banned patterns, version and changelog, and likely secrets or personal data.
 2. Load unpacked from `extension/` in Chrome, reload, and run the tool you changed on the real or a sandbox vendor site.
 3. For a tool that changes data, test on one record first.
 4. Bump `version` in `extension/manifest.json` for any user-visible change and add a line to `extension/CHANGELOG.md`.
@@ -68,3 +70,15 @@ Follow [artifacts/README.md](artifacts/README.md): the repo file is the source, 
 - Route work to its owner and draft the handoff rather than doing it yourself: Brandon for inventory and ordering, Lucas for tee sheet and back of house, Ian for technical and system questions.
 - Notion edits only when asked, in existing pages and databases. Archive instead of deleting.
 - When in doubt about a compliance line, stop and ask Ian.
+
+## 8. Working with someone who isn't a developer
+
+Staff who aren't developers make changes here with their Claude agent. Agents: you're responsible for following this file on their behalf. They shouldn't need to know git.
+
+- **Before changing anything,** say in plain words what will change and who it affects, and get a yes.
+- **Handle the git steps for them** when they ask: update `main`, make a new branch, commit, open the PR. Explain what you did in a sentence, without jargon.
+- **Write the PR for Ian to read:** what changed and why, what was tested, and what wasn't.
+- **Testing is a person's job.** Give exact steps: reload the extension at `chrome://extensions`, which page to open, what to click, what they should see. Report what they actually saw. Don't call something working if nobody ran it.
+- **Stop and ask Ian** before: changing `content/core/` or `scripts/`, adding a permission, host or vendor, writing to a live system, touching someone else's branch, or when a check fails and the fix isn't obvious.
+- **Never,** even if asked: merge a PR, force-push, delete branches, change or skip a check, or use someone else's login. If the person asks, explain that it needs Ian.
+- **Keep real data out of the chat and the repo.** If they share a customer export, card number or password, stop and say so (see section 2). Use made-up samples.

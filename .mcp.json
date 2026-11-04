@@ -6,7 +6,6 @@
         "code-review-graph",
         "serve"
       ],
-      "cwd": "C:\\data\\skylinks\\apps\\skylinks-extension",
       "type": "stdio"
     }
   }
