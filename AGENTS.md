@@ -52,7 +52,7 @@ orders/                  # Pro Shop Orders — a full extension page (app.html/a
                          # Opened from the popup's "Pro Shop Orders" buttons; reads Lightspeed via executeScript({func}). See orders/README.md
 icons/                   # Toolbar icons (16/24/32/48/128)
 docs/                    # Vendor API references and walkthroughs (no real data)
-tasks/                   # Completed/in-flight task notes (project history, not app code)
+docs/history/             # Old specs, plans and reviews (project history, not current guidance; may be out of date)
 ```
 
 ## Key entry points
