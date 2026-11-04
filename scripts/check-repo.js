@@ -63,8 +63,8 @@ const headName = process.env.GITHUB_HEAD_REF || git('rev-parse', '--abbrev-ref',
 if (process.env.GITHUB_BASE_REF && baseName !== 'main') {
   fail(`This pull request targets "${baseName}". Every pull request must target main (see PROTOCOLS.md section 1).`);
 }
-if (headName !== 'HEAD' && headName !== 'main' && !/^[a-z0-9-]+\/[A-Za-z0-9._-]+$/.test(headName)) {
-  fail(`Branch "${headName}" should be named <initials>/<topic>.`);
+if (headName !== 'HEAD' && headName !== 'main' && !/^[a-z0-9-]+\/[A-Za-z0-9._-]+$/.test(headName) && !/^dev-[a-z0-9-]+$/.test(headName)) {
+  fail(`Branch "${headName}" should be named <initials>/<topic> or dev-<initials>.`);
 }
 
 const base = process.env.CHECK_BASE || `origin/${baseName === 'main' ? 'main' : baseName}`;
@@ -76,9 +76,10 @@ if (mergeBase) {
   const changed = git('diff', '--numstat', '--ignore-space-at-eol', mergeBase, 'HEAD').split('\n').filter(Boolean)
     .map(l => l.split('\t')).filter(([a, d]) => a !== '0' || d !== '0').map(p => p[2]);
 
-  // Extension code changes need a version bump and a changelog line.
+  // Extension code changes need a version bump and a changelog line. Pushes to a dev
+  // branch are work in progress, so this waits for the pull request to main.
   const shipped = changed.filter(f => f.startsWith('extension/') && !f.startsWith('extension/docs/') && !f.endsWith('.md'));
-  if (shipped.some(f => f !== 'extension/manifest.json')) {
+  if (process.env.GITHUB_EVENT_NAME !== 'push' && shipped.some(f => f !== 'extension/manifest.json')) {
     const oldVersion = JSON.parse(git('show', `${mergeBase}:extension/manifest.json`)).version;
     if (oldVersion === manifest.version) fail(`Extension code changed but manifest.json is still ${manifest.version}. Bump the version.`);
     if (!changed.includes('extension/CHANGELOG.md')) fail('Extension code changed but extension/CHANGELOG.md has no new line.');

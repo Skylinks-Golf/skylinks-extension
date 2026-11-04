@@ -1,7 +1,7 @@
 ## What and why
 
 ## Checklist
-- [ ] New `<initials>/<topic>` branch from current `main`; this PR targets `main`
+- [ ] New `<initials>/<topic>` branch from current `main`, or a completed `dev-<initials>` branch; this PR targets `main`
 - [ ] `node scripts/check-repo.js` passes
 - [ ] No secrets, card data, payroll, or customer/member PII; no new third-party contacts (examples are synthetic)
 - [ ] Loaded unpacked from `extension/` and tested the changed tool (say what you tested)
