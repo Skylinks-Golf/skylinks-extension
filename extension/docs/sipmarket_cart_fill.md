@@ -35,4 +35,4 @@ Move cart filling into the extension so it runs locally with no Claude usage, st
 - **SKU map:** its own file under `orders/`, not `orders/config.js`. It holds SKUs and item names only, with no prices or invoice details, because this repo is public.
 - **"Drafts only" rule:** fine, because it stops before checkout. It writes to a live vendor site, so it shows the items and quantities first, gets confirmation from the person running it, and is tested with one item before a full order. Emptying the cart is the undo.
 
-LC can build and test all of this without checking in. See `PROTOCOLS.md` section 1 for the limits. Other portals come after this one is merged.
+LC can build this without checking in. Testing against the real cart needs an Active row in the Agent Permissions registry, which only Ian can add. See `PROTOCOLS.md` section 1 for the limits. Other portals come after this one is merged.
