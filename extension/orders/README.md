@@ -4,7 +4,7 @@ Weekly order run, last week's sales, money (profit and leaks) and add/cut/swap i
 
 - **Owner:** LC Torres (lc@skylinksgolf.com)
 - **Open it:** Skylinks Tools toolbar popup → **Pro Shop Orders** buttons (shown on every site). Each opens `orders/app.html#<tab>` in a new tab.
-- **Read only.** Nothing is ordered, emailed or changed in Lightspeed. "Open vendor tabs & emails" opens portals and pre-filled Gmail compose windows; staff sign in, review and press Submit/Send themselves.
+- **Read only.** Nothing is ordered, emailed or changed in Lightspeed. "Open vendor tabs & emails" opens portals and pre-filled Gmail compose windows; staff sign in, review and press Submit/Send themselves. Staff may ask Claude to add items to a vendor cart (Brandon agreed, per Ian, 2026-11-04); a person still reviews and submits.
 
 ## How it differs from the other tools
 
@@ -33,5 +33,4 @@ The other tools are content scripts injected into a vendor page with a modal. Th
 
 ## Known follow-ups
 
-- RepRally's contact in `config.js` is a personal Gmail address (same open question as the Artifact).
 - Confirm "(guess)" delivery cadences with reps.

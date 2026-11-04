@@ -78,5 +78,10 @@
     );
   }
 
-  ns.dates = { todayLocal, weekRangeMonSun, addDays, pacificMidnightUTC, pacificDayUTCWindow, formatLongDate, formatShortDate, formatWeekday, pacificHour };
+  // Today's calendar date in Pacific time, as YYYY-MM-DD.
+  function todayPacific() {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  }
+
+  ns.dates = { todayLocal, todayPacific, weekRangeMonSun, addDays, pacificMidnightUTC, pacificDayUTCWindow, formatLongDate, formatShortDate, formatWeekday, pacificHour };
 })();
