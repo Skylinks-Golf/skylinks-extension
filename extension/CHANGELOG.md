@@ -2,6 +2,9 @@
 
 Newest first. Bump `version` in `manifest.json` for any user-visible change and add a line here.
 
+## 1.10
+- Pro Shop Orders: the page now says plainly that it doesn't fill carts yet and that staff add the items themselves, instead of pointing to Claude filling them.
+
 ## 1.9
 - Pro Shop Orders: the default sales week and the "pulled at" time now use Pacific time on any computer. A Lightspeed vendor name with unusual characters no longer breaks the order page.
 

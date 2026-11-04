@@ -268,7 +268,7 @@ async function go(){const btn=document.getElementById('goBtn'),msg=document.getE
  for(const v of mails){const m=email(v.code);await chrome.tabs.create({url:gmail(m),active:false})}
  const t='Fill this week\'s Pro Shop carts (I am signed in to the vendor tabs):\n'+JSON.stringify(P);
  try{await navigator.clipboard.writeText(t)}catch(e){}
- msg.className='gomsg ok';msg.innerHTML=`<b>Opened ${portals.length} vendor tabs and ${mails.length} Gmail emails.</b> Sign into each vendor tab, review and send each email yourself. To have Claude fill the carts, paste into your Claude chat (the order is copied) or use the <b>Yes, add items to cart</b> button on the Weekly Order Run page in Claude. <button class="btn ghost sm" id="fbCopy">Copy order again</button>`;
+ msg.className='gomsg ok';msg.innerHTML=`<b>Opened ${portals.length} vendor tabs and ${mails.length} Gmail emails.</b> Sign into each vendor tab and add the items to its cart using the list under <b>See items</b>, then review and submit. Review and send each email yourself. The full order is also copied, in case you want it in a Claude chat. <button class="btn ghost sm" id="fbCopy">Copy order again</button>`;
  document.getElementById('fbCopy').onclick=e=>copy(t,e.target);btn.disabled=false}
 document.addEventListener('click',e=>{if(e.target&&e.target.id==='goBtn')go()});
 function copy(t,btn,keepLabel){const done_=()=>{if(keepLabel)return;const o=btn.textContent;btn.textContent='Copied';setTimeout(()=>btn.textContent=o,1500)};const fb=()=>{const w=document.getElementById('copyWrap');w.hidden=false;const b=document.getElementById('copybox');b.value=t;b.focus();b.select()};try{navigator.clipboard.writeText(t).then(done_,fb)}catch(e){fb()}}
