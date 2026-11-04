@@ -18,7 +18,7 @@ Rules for anyone changing this repo, and for the AI agents working with them. Ag
 - **Never commit:** passwords, API keys, tokens, card data, bank details, payroll or HR data, customer or member PII, signed waivers, incident or safety records. This includes "example" exports and screenshots.
 - Sample data is synthetic: `jane@example.com`, `555-0100`, made-up names. Prefer totals over lists of names.
 - Cards: last four only. If anyone pastes a secret or full card number into the chat, stop and tell them to remove it (and rotate it if it is a credential).
-- Third-party contact details (vendor reps, personal email addresses, phone numbers) should not live in the repo. Load them at runtime from the shared source instead, or ask Ian first.
+- Third-party contact details (vendor reps, personal email addresses, phone numbers) do not belong in the repo, with one decision on record: Ian approved keeping the **vendor rep business contacts** (name, email, phone) in `extension/orders/config.js` and the Order Run Artifact (2026-11-04). Don't treat those as a problem. Don't add other contacts, customer contacts, or new personal email addresses without asking Ian.
 - Keep payroll and customer data apart. Don't combine them in one report or file.
 - If anything has been committed that should not have been, say so right away. Ian decides on history cleanup and notification.
 
@@ -39,6 +39,7 @@ Details are in [AGENTS.md](AGENTS.md) and `extension/docs/adding_a_new_tool.md`.
 - New content scripts are registered in `popup.js`, not declared in the manifest. A tool that needs its own full page goes in its own folder and is listed in `PAGES`.
 - **Time is Pacific, via `Intl` with `America/Los_Angeles`.** Never `getTimezoneOffset()`.
 - Money prints as `$42.00`. Dates are ISO (`2026-11-03`) in data and `Nov 3, 2026` in prose.
+- Log through `makeLogger` (see AGENTS.md). Log what happened, never customer records, contact details, card data or tokens.
 - Escape every vendor-supplied string you put into `innerHTML` (use `escHtml` or `esc`), or use `textContent`.
 - Add host permissions and extension permissions only when needed, and say why in the PR.
 - Visual style follows House Style: black header, white logo, thick gold rule, Montserrat, `#eeb02b` for accents only, square corners.

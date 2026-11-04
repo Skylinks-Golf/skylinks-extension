@@ -11,7 +11,10 @@ window.SkylinksUtils = (() => {
             : s;
     };
 
-    const makeLogger = prefix => (msg, ...args) => console.log(`[${prefix}] ${msg}`, ...args);
+    // Delegates to core/log.js (console + stored diagnostic log) once it is loaded.
+    const makeLogger = prefix => window.SkylinksUtils.createLogger
+        ? window.SkylinksUtils.createLogger(prefix)
+        : (msg, ...args) => console.log(`[${prefix}] ${msg}`, ...args);
 
     return { TD, TH, escHtml, escCsv, makeLogger };
 })();
