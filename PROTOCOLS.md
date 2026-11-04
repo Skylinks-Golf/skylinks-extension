@@ -39,6 +39,7 @@ Details are in [AGENTS.md](AGENTS.md) and `extension/docs/adding_a_new_tool.md`.
 - New content scripts are registered in `popup.js`, not declared in the manifest. A tool that needs its own full page goes in its own folder and is listed in `PAGES`.
 - **Time is Pacific, via `Intl` with `America/Los_Angeles`.** Never `getTimezoneOffset()`.
 - Money prints as `$42.00`. Dates are ISO (`2026-11-03`) in data and `Nov 3, 2026` in prose.
+- Log through `makeLogger` (see AGENTS.md). Log what happened, never customer records, contact details, card data or tokens.
 - Escape every vendor-supplied string you put into `innerHTML` (use `escHtml` or `esc`), or use `textContent`.
 - Add host permissions and extension permissions only when needed, and say why in the PR.
 - Visual style follows House Style: black header, white logo, thick gold rule, Montserrat, `#eeb02b` for accents only, square corners.

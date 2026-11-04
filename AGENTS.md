@@ -36,7 +36,7 @@ content/
     modal.js             # createModal() — the shared report UI overlay
     workflow.js           # runReport() — wires modal to validate→fetch→process→render
     paginate.js           # Offset / hasMore-style pagination helper
-    table.js, download.js, copy.js, dom.js, theme.js, config.js, format.js, errors.js, preflight.js
+    table.js, download.js, copy.js, dom.js, theme.js, config.js, format.js, errors.js, preflight.js, log.js
   chronogolf.js          # Chronogolf: Import Customers + Export Tee Sheet tools
   merchantos.js           # Lightspeed/MerchantOS: Sales Lines Report
   snapshot_merchantos.js  # Lightspeed/MerchantOS: Daily Snapshot Report (uses chart.umd.min.js)
@@ -73,6 +73,7 @@ There is no build step and no test suite for this app.
 ## Conventions & gotchas
 
 - **Timezone handling: always use `Intl`, never `getTimezoneOffset()`.** The established convention lives in `content/core/dates.js` — see `pacificMidnightUTC` (`content/core/dates.js:37`) and `pacificHour` (`content/core/dates.js:74`), both of which use `Intl.DateTimeFormat` with `timeZone: 'America/Los_Angeles'` to get the correct Pacific offset year-round, including on DST transition days. Do not reintroduce `Date.prototype.getTimezoneOffset()` — it reflects the *browser's* local timezone, not Pacific, and breaks for any staff member not physically on Pacific time.
+- **Log through `makeLogger`, never with bare `console.log`.** `makeLogger(prefix)` (in `content/utils.js`) writes to the console and to the stored diagnostic log (`content/core/log.js`) that staff copy from the popup's Diagnostics section. Log what happened (step, counts, status codes), never data: no customer records, emails, phone numbers, card data or tokens. `log.js` redacts as a safety net, but don't rely on it. Use `log.error('what failed', err)` in catch blocks so failures land in the log. New extension pages load `content/utils.js` and `content/core/log.js` first.
 - **Per-site isolation, shared core.** Each vendor gets its own `content/<vendor>.js` file; nothing vendor-specific belongs in `content/core/`. Shared behavior (modals, CSV, dates, API calls) goes in `content/core/*.js` and is consumed via `window.SkylinksUtils`, never re-implemented per tool.
 - **Extension pages are the exception to the content-script pattern.** A tool that needs its own full page (currently only `orders/`) lives in its own folder, is listed in `PAGES` in `popup.js`, and is opened with `chrome.tabs.create(chrome.runtime.getURL(...))`. Use this only when a modal over the vendor site isn't enough.
 - **No manifest-declared content scripts.** Scripts are injected imperatively from `popup.js` (`CORE_FILES` + the matched tool's `files`), not via `manifest.json`'s `content_scripts`. If a new file needs to run, it must be added to `popup.js`, not just to the `content/` folder.

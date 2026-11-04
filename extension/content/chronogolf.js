@@ -666,7 +666,7 @@
       }
     } catch (err) {
       modal.setStatus('❌ Error: ' + err.message, 'error');
-      console.error('[CG Import] Error:', err);
+      log.error('Error', err);
       this.disabled = false;
       return;
     }
