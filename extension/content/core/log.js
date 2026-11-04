@@ -13,17 +13,20 @@
   const MAX_ENTRIES = 500;
   const MAX_STR = 300;
   const MAX_ITEMS = 10;
-  const SENSITIVE_KEY = /pass|token|secret|auth|cookie|card|cvv|email|phone|first.?name|last.?name|customer|address|birth|ghin|ssn/i;
+  const SENSITIVE_KEY = /pass|token|secret|auth|cookie|card|cvv|email|phone|name|customer|member|player|guest|contact|address|birth|dob|ghin|ssn/i;
 
   const store = () => (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) || null;
 
   function redact(s) {
     return String(s)
       .replace(/https?:\/\/[^\s"')]+/g, u => u.split('?')[0])
+      .replace(/\?[^\s"')=]+=[^\s"')]*/g, '') // query strings on relative URLs
       .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[email]')
       .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, 'Bearer [redacted]')
       .replace(/\b[A-Za-z0-9_-]{32,}\b/g, '[token]')
-      .replace(/\b\d(?:[ -]?\d){7,}\b/g, '[num]')
+      .replace(/\b(?!\d{4}-\d{2}-\d{2}\b)\d(?:[ -]?\d){7,}\b/g, '[num]') // long digit runs, but keep ISO dates
+      .replace(/(?<!\d)\(?\d{3}\)?[ .-]?\d{3}[ .-]?\d{4}(?!\d)/g, '[phone]')
+      .replace(/(?<![\d.-])\d{3}[.-]\d{4}(?![\d.-])/g, '[phone]')
       .slice(0, MAX_STR);
   }
 

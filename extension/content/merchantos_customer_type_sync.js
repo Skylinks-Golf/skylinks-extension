@@ -276,7 +276,7 @@
           const existing = existingByEmail.get(row.email.toLowerCase());
 
           if (!existing) {
-            log(`NOT FOUND row ${row._lineNumber} (${row.email})`);
+            log(`NOT FOUND row ${row._lineNumber}`);
             results.notFound.push({ row: row._lineNumber, name: displayName, reason: 'no Retail customer with this email — confirm the Golf profile was created first' });
             return;
           }
@@ -288,10 +288,10 @@
 
           try {
             await api.put(`/Customer/${existing.id}.json`, { customerTypeID: row._typeId });
-            log(`UPDATED row ${row._lineNumber} (${row.email}) → customerTypeID ${row._typeId}`);
+            log(`UPDATED row ${row._lineNumber} → customerTypeID ${row._typeId}`);
             results.updated.push({ row: row._lineNumber, name: displayName, id: existing.id });
           } catch (e) {
-            log(`FAILED row ${row._lineNumber} (${row.email}) → ${e.message}`);
+            log(`FAILED row ${row._lineNumber} → ${e.message}`);
             results.failed.push({ row: row._lineNumber, name: displayName, error: e.message });
           }
         }));

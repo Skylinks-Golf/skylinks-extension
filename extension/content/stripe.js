@@ -49,7 +49,7 @@
     const [header, ...lines] = clean.split('\n');
     if (header.trim() !== EXPECTED_HEADER) {
       modal.setStatus('❌ That doesn’t look like the Daily transactions report. Copy it again from the Stripe app.', 'error');
-      log('Header mismatch — got', JSON.stringify(header.slice(0, 120)));
+      log(`Header mismatch (${header.length} chars)`);
       return;
     }
     if (!lines.length) {

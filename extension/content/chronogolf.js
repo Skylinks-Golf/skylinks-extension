@@ -589,10 +589,10 @@
           parts.push(`player type not updated: ${result.playerTypeNote}`);
         }
         const note = parts.filter(Boolean).join('; ');
-        log(`UPDATED row ${row._lineNumber} (${name}) → ID: ${existingId}${note ? ' — ' + note : ''}`);
+        log(`UPDATED row ${row._lineNumber} → ID: ${existingId}${note ? ' (has note, see results)' : ''}`);
         results.updated.push({ row: row._lineNumber, name, id: existingId, note });
       } else {
-        log(`FAILED (update) row ${row._lineNumber} (${name}) → ${result.message}`);
+        log(`FAILED (update) row ${row._lineNumber} → ${result.message}`);
         results.failed.push({ row: row._lineNumber, name, error: result.message });
       }
     }
@@ -627,7 +627,7 @@
           // creating, so we update it instead of making a duplicate.
           const phoneMatchId = await findCustomerIdByPhoneAndName(row);
           if (phoneMatchId) {
-            log(`Row ${row._lineNumber} (${name}) matched existing ID ${phoneMatchId} by phone + name — updating.`);
+            log(`Row ${row._lineNumber} matched existing ID ${phoneMatchId} by phone + name — updating.`);
             await handleUpdate(phoneMatchId, row, name, 'matched by phone + name (email not on profile)');
             return;
           }
@@ -639,15 +639,15 @@
               const foundId = await findCustomerIdByEmail(row.email);
               if (foundId) {
                 if (existingCustomersByEmail instanceof Map) existingCustomersByEmail.set(emailKey, foundId);
-                log(`Row ${row._lineNumber} (${name}) already exists (stale cache) — updating ID ${foundId} instead.`);
+                log(`Row ${row._lineNumber} already exists (stale cache) — updating ID ${foundId} instead.`);
                 await handleUpdate(foundId, row, name);
                 return;
               }
-              log(`Row ${row._lineNumber} (${name}) rejected as existing, but no profile found by email or phone + name — needs manual review.`);
+              log(`Row ${row._lineNumber} rejected as existing, but no profile found by email or phone + name — needs manual review.`);
               results.failed.push({ row: row._lineNumber, name, error: `${created.message} — no matching profile found by email or phone + name; find and update manually` });
               return;
             }
-            log(`FAILED row ${row._lineNumber} (${name}) → ${created.status}: ${created.message}`);
+            log(`FAILED row ${row._lineNumber} → ${created.status}: ${created.message}`);
             results.failed.push({ row: row._lineNumber, name, error: created.message });
             return;
           }
@@ -658,7 +658,7 @@
             if (!attach.success) noteParts.push(`player type not set: ${attach.message}`);
           }
           const note = noteParts.filter(Boolean).join('; ');
-          log(`CREATED row ${row._lineNumber} (${name}) → ID: ${created.id}${note ? ' — ' + note : ''}`);
+          log(`CREATED row ${row._lineNumber} → ID: ${created.id}${note ? ' (has note, see results)' : ''}`);
           results.created.push({ row: row._lineNumber, name, id: created.id, ref: created.ref, note });
         }));
 
