@@ -5,6 +5,24 @@ reasoning behind non-obvious calls. Newest entries at the top.
 
 ---
 
+## 2026-11-03 — Pro Shop Orders merged into Skylinks Tools
+
+**What:** LC's standalone "Skylinks Pro Shop Orders" extension (v1.2.1) now lives in `orders/`
+as an extension page, so there's one Skylinks extension. Popup shows four "Pro Shop Orders"
+buttons on every site (`PAGES` in `popup.js`). `manifest.json` adds the `storage` permission
+(per-week pull cache) and bumps to 1.7.
+
+**Why a page, not a modal:** four tabs, pie charts and an editable order per vendor. It still
+reads Lightspeed through the signed-in session by running self-contained reader functions in
+a `us.merchantos.com` tab via `executeScript({func})`.
+
+**Found in passing:** Lightspeed's report pages changed — rows are now JSON in
+`pannel.listing_row_values` and the visible table dropped the cost columns, so table scraping
+returns nothing. `orders/app.js` parses the JSON (verified against the Oct 27 – Nov 2 week).
+The other Lightspeed tools don't scrape report tables, so they aren't affected.
+
+---
+
 ## 2026-10-01 — Stripe report: Stripe App + extension save tool
 
 **Decision:** build the data side as a private Stripe App (public API as the signed-in

@@ -48,6 +48,8 @@ content/
   stripe.js               # Stripe: Save Stripe Report (pastes CSV from the skylinks-stripe-app Stripe App; no API calls)
   tee_sheet_export.js     # Chronogolf tee sheet CSV export
   vendor/chart.umd.min.js # Vendored Chart.js
+orders/                  # Pro Shop Orders — a full extension page (app.html/app.js/config.js), not a content script.
+                         # Opened from the popup's "Pro Shop Orders" buttons; reads Lightspeed via executeScript({func}). See orders/README.md
 icons/                   # Toolbar icons (16/24/32/48/128)
 docs/                    # Vendor API references and walkthroughs (no real data)
 tasks/                   # Completed/in-flight task notes (project history, not app code)
@@ -73,6 +75,7 @@ There is no build step and no test suite for this app.
 
 - **Timezone handling: always use `Intl`, never `getTimezoneOffset()`.** The established convention lives in `content/core/dates.js` — see `pacificMidnightUTC` (`content/core/dates.js:37`) and `pacificHour` (`content/core/dates.js:74`), both of which use `Intl.DateTimeFormat` with `timeZone: 'America/Los_Angeles'` to get the correct Pacific offset year-round, including on DST transition days. Do not reintroduce `Date.prototype.getTimezoneOffset()` — it reflects the *browser's* local timezone, not Pacific, and breaks for any staff member not physically on Pacific time.
 - **Per-site isolation, shared core.** Each vendor gets its own `content/<vendor>.js` file; nothing vendor-specific belongs in `content/core/`. Shared behavior (modals, CSV, dates, API calls) goes in `content/core/*.js` and is consumed via `window.SkylinksUtils`, never re-implemented per tool.
+- **Extension pages are the exception to the content-script pattern.** A tool that needs its own full page (currently only `orders/`) lives in its own folder, is listed in `PAGES` in `popup.js`, and is opened with `chrome.tabs.create(chrome.runtime.getURL(...))`. Use this only when a modal over the vendor site isn't enough.
 - **No manifest-declared content scripts.** Scripts are injected imperatively from `popup.js` (`CORE_FILES` + the matched tool's `files`), not via `manifest.json`'s `content_scripts`. If a new file needs to run, it must be added to `popup.js`, not just to the `content/` folder.
 - **`docs/adding_a_new_tool.md` is the source of truth** for the modal/API-client/CSV/report pipeline pattern (`createModal`, `apiClient`, `runReport`) — follow its boilerplate rather than hand-rolling a new tool's structure.
 

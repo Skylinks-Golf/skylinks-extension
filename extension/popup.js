@@ -30,6 +30,28 @@ const TOOLS = [
   { match: url => url.includes('dashboard.stripe.com'), label: 'Save Stripe Report', color: 'btn-blue', files: ['content/stripe.js'] },
 ];
 
+// Extension pages (not content scripts). Shown on every site; each opens orders/app.html#<tab>.
+const PAGES = [
+  { label: "Last Week's Sales", page: 'orders/app.html#sales' },
+  { label: 'Money (Profit & Leaks)', page: 'orders/app.html#money' },
+  { label: 'Add / Cut / Swap Ideas', page: 'orders/app.html#ideas' },
+  { label: "This Week's Order", page: 'orders/app.html#order' },
+];
+
+function addPages(body) {
+  const h = document.createElement('div');
+  h.className = 'section';
+  h.textContent = 'Pro Shop Orders';
+  body.appendChild(h);
+  PAGES.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.textContent = p.label;
+    btn.onclick = () => { chrome.tabs.create({ url: chrome.runtime.getURL(p.page) }); window.close(); };
+    body.appendChild(btn);
+  });
+}
+
 chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
   const body = document.getElementById('body');
   const url = tab.url || '';
@@ -52,6 +74,8 @@ chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
     msg.textContent = 'Navigate to Lightspeed Retail, Lightspeed Golf, the SelectPi Portal, Perfect Venue, Deputy, or Stripe to use these tools.';
     body.appendChild(msg);
   }
+
+  addPages(body);
 
   const hint = document.createElement('p');
   hint.className = 'hint';
