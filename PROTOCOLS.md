@@ -9,6 +9,8 @@ Rules for anyone changing this repo, and for the AI agents working with them. Ag
 - Work on a `<initials>/<topic>` branch (`ian/docs-tidy`, `lc/orders-fix`). Open a PR for every change. **Never push to `main`.**
 - Start each change from an up-to-date `main` on a new branch. Every PR targets `main`. Never reuse a branch that has already been merged, and never merge a PR into another feature branch: that is how the logging work in #12 got stranded.
 - Ian reviews and approves everyone else's PRs (`.github/CODEOWNERS`), and the repo checks must pass before anything merges. If a check fails, fix the problem or ask Ian. Don't edit or disable a check to get past it.
+- **Dev branches (currently LC only, set by Ian).** LC works on `dev-lc` instead of opening a PR for each change. Create it from current `main`, hold one feature at a time, and commit and push there when she asks. Open one PR from `dev-lc` to `main` when the feature is complete, for Ian to review. Until then nothing needs merging. Merge `main` into `dev-lc` from time to time; don't rebase or force-push. After the final merge, Ian deletes the branch and the next feature starts a new `dev-lc` from `main`.
+- A dev branch changes when Ian merges, not what needs his OK. Sections 2 and 3 and the "stop and ask Ian" list in section 8 still apply, and a question doesn't need a PR. This repo is public, so everything pushed to a dev branch is public right away. The repo checks run on each push to flag problems.
 - Agents commit or push only when the user asks. Never create or merge a PR on your own initiative.
 - **Destructive git needs the user to type "approve":** force-push, history rewrite, deleting branches or tags, `reset --hard`, deleting files outside the task, deleting the repo or a local clone. Describe exactly what will be lost first, and keep a backup (for example a bundle) of anything unpushed.
 - Commit messages say what changed and why. One topic per branch and PR. Don't mix refactors with features.
@@ -79,6 +81,7 @@ Staff who aren't developers make changes here with their Claude agent. Agents: y
 - **Handle the git steps for them** when they ask: update `main`, make a new branch, commit, open the PR. Explain what you did in a sentence, without jargon.
 - **Write the PR for Ian to read:** what changed and why, what was tested, and what wasn't.
 - **Testing is a person's job.** Give exact steps: reload the extension at `chrome://extensions`, which page to open, what to click, what they should see. Report what they actually saw. Don't call something working if nobody ran it.
+- **On a dev branch** (see section 1), commit and push there and skip the PR until the feature is complete.
 - **Stop and ask Ian** before: changing `content/core/` or `scripts/`, adding a permission, host or vendor, writing to a live system, touching someone else's branch, or when a check fails and the fix isn't obvious.
 - **Never,** even if asked: merge a PR, force-push, delete branches, change or skip a check, or use someone else's login. If the person asks, explain that it needs Ian.
 - **Keep real data out of the chat and the repo.** If they share a customer export, card number or password, stop and say so (see section 2). Use made-up samples.
