@@ -20,7 +20,7 @@ Skylinks Tools is a Chrome MV3 browser extension used by Skylinks Golf pro-shop 
 - **Per-site content scripts** under `content/`, injected on demand via `chrome.scripting.executeScript` from the popup (not declared statically in the manifest).
 - **Shared modules** under `content/core/` (modal, API client, CSV, dates, pagination, table rendering, etc.) plus `content/utils.js`, all attached to a single global namespace, `window.SkylinksUtils`.
 - One vendored library: `content/vendor/chart.umd.min.js` (Chart.js UMD build, used by the snapshot reports).
-- No package.json, no npm scripts, no test framework, no CI for this app.
+- No package.json, no npm scripts, no test framework. CI runs `scripts/check-repo.js` on every PR (plain Node, no install).
 
 ## Structure
 
@@ -44,6 +44,7 @@ content/
   snapshot_selectpi.js    # SelectPi: Daily Snapshot Report (uses chart.umd.min.js)
   perfectvenue.js         # Perfect Venue: Weekly Analytics Report
   deputy.js               # Deputy: Weekly Hours Report
+  merchantos_customer_type_sync.js # Lightspeed/MerchantOS: Sync Customer Type (writes to Lightspeed; see PROTOCOLS.md section 3)
   stripe.js               # Stripe: Save Stripe Report (pastes CSV from the skylinks-stripe-app Stripe App; no API calls)
   tee_sheet_export.js     # Chronogolf tee sheet CSV export
   vendor/chart.umd.min.js # Vendored Chart.js
@@ -56,19 +57,18 @@ docs/history/             # Old specs, plans and reviews (project history, not c
 
 ## Key entry points
 
-- `manifest.json:1` — MV3 manifest; `host_permissions` (lines 7–15) list every vendor domain this extension is allowed to run on. Adding a new vendor starts here.
-- `popup.js:1` (`CORE_FILES`) and `popup.js:20` (`TOOLS`) — the routing table. `TOOLS` matches the active tab's URL to a vendor and injects `CORE_FILES` + that tool's file(s) via `chrome.scripting.executeScript` (`popup.js:31`). There is no manifest-declared `content_scripts` block — everything is injected on click.
-- `content/utils.js:1` and `content/core/*.js` — the shared `window.SkylinksUtils` namespace every content script depends on.
-- `docs/adding_a_new_tool.md` — the canonical, up-to-date walkthrough for wiring in a 7th vendor (content script boilerplate, `popup.js` registration, `manifest.json` host permission). Follow it exactly rather than improvising a new pattern.
+- `manifest.json` — MV3 manifest; `host_permissions` lists every vendor domain this extension is allowed to run on. Adding a new vendor starts here.
+- `popup.js` (`CORE_FILES` and `TOOLS`) — the routing table. `TOOLS` matches the active tab's URL to a vendor and injects `CORE_FILES` + that tool's file(s) via `chrome.scripting.executeScript`. There is no manifest-declared `content_scripts` block — everything is injected on click.
+- `content/utils.js` and `content/core/*.js` — the shared `window.SkylinksUtils` namespace every content script depends on.
+- `docs/adding_a_new_tool.md` — the canonical, up-to-date walkthrough for wiring in a new vendor (content script boilerplate, `popup.js` registration, `manifest.json` host permission). Follow it exactly rather than improvising a new pattern.
 
 ## Development
 
-There is no build step and no test suite for this app.
+There is no build step and no test framework for this app.
 
 - **Install/build**: none — the extension runs directly from source files.
 - **Load unpacked** (how staff/devs run it): open `chrome://extensions`, enable Developer mode, click "Load unpacked", select the `extension/` folder of this repo. Reload the extension after editing any file to pick up changes.
-- **Test**: none exists. Verify changes manually by loading unpacked and exercising the relevant tool button on the real (or a sandbox) vendor site.
-- Repo-root workspace scripts (`npm run sle:*` at `C:\data\skylinks\package.json`) manage the overall Skylinks Local Ecosystem/submodules, not this app specifically.
+- **Check**: run `node scripts/check-repo.js` from the repo root (Node only, no install). CI runs the same script on every PR. It can't run the extension, so also verify changes manually by loading unpacked and exercising the relevant tool button on the real (or a sandbox) vendor site.
 
 ## Conventions & gotchas
 
@@ -81,7 +81,7 @@ There is no build step and no test suite for this app.
 
 ## Token-efficient exploration
 
-A `code-review-graph` MCP server is configured for this repo (`.mcp.json`) — a local knowledge-graph tool for structural code navigation (semantic search, impact radius, caller/callee tracing, dead-code detection, execution-flow tracing). When it's connected and available, prefer it over raw Grep/Glob/Read for exploration, debugging, refactor-planning, and change-review tasks — it's typically faster and cheaper in tokens, and surfaces structural context (callers, dependents, test coverage) that plain file scanning won't. When it isn't available or doesn't cover what you need, fall back to normal Grep/Glob/Read without hesitation.
+A `code-review-graph` MCP server is configured for this repo (`.mcp.json`). It's optional and needs `uv` installed, so it's fine if it isn't available on your machine. It's a local knowledge-graph tool for structural code navigation (semantic search, impact radius, caller/callee tracing, dead-code detection, execution-flow tracing). When it's connected and available, prefer it over raw Grep/Glob/Read for exploration, debugging, refactor-planning, and change-review tasks — it's typically faster and cheaper in tokens, and surfaces structural context (callers, dependents, test coverage) that plain file scanning won't. When it isn't available or doesn't cover what you need, fall back to normal Grep/Glob/Read without hesitation.
 
 Four skills under `.claude/skills/` wrap this tool for common workflows:
 - `debug-issue` — trace a bug via `semantic_search_nodes`, caller/callee tracing, and `detect_changes`.
@@ -95,4 +95,4 @@ This repo also holds the team's shared claude.ai Artifacts, one folder per artif
 
 ## For AI agents working here
 
-Skylinks org instructions also apply. This repo's guidance is this file; `CLAUDE.md` just points here. Other agent tools (Gemini, Cursor, etc.) are no longer configured in this repo; use this file as the shared source.
+Skylinks org instructions also apply. This repo's guidance is this file; `CLAUDE.md` just points here. Other agent tools (Gemini, Cursor, etc.) are no longer configured in this repo; use this file as the shared source. If you're working with someone who isn't a developer, follow [PROTOCOLS.md](PROTOCOLS.md) section 8.

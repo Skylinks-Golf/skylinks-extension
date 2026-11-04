@@ -1,6 +1,6 @@
 # Adding a New Tool
 
-This walkthrough shows how to add a 7th integration to the extension.
+This walkthrough shows how to add a new integration to the extension. A tool that needs its own full page instead of a modal goes in its own folder and is listed in `PAGES` in `popup.js` (see `orders/`).
 
 ## 1. Create the content script
 
@@ -92,6 +92,12 @@ Add the platform's hostname to `host_permissions`:
 ```json
 "https://app.myplatform.com/*"
 ```
+
+## 4. Finish up
+
+- **Logging:** use `const log = makeLogger('Name')`, and `log.error('what failed', err)` in catch blocks. Log steps, row numbers and counts, never names, contact details, card data, tokens or raw API responses. The log gets sent to Ian and pasted into Claude.
+- **Release:** bump `version` in `manifest.json` and add a line to `CHANGELOG.md`.
+- **Check:** run `node scripts/check-repo.js` from the repo root, then load unpacked and try the tool. See `PROTOCOLS.md` section 5.
 
 ## Core API reference
 
