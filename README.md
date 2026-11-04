@@ -29,6 +29,14 @@ Open the extension on one of these sites and its buttons appear.
 | Deputy | Weekly Hours Report |
 | Stripe dashboard | Save Stripe Report |
 
+## Something went wrong?
+
+1. Click the **Skylinks Tools** icon, scroll to **Diagnostics**, and press **Copy log**.
+2. Paste it into your message to Ian (or into Claude when you are asking it to fix the problem). Use **Download** if it is too long to paste.
+3. Tell us what you clicked and on which page.
+
+The log holds the last 500 events: which tool ran, which Lightspeed/Chronogolf/etc. requests failed (status codes only), and any errors. It never includes customer names, emails, card numbers or passwords, and it stays in your browser until you copy it. **Clear** empties it.
+
 ## Contributing
 
 - Work on a `<initials>/<topic>` branch and open a pull request. Never push to `main`.

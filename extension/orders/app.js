@@ -16,6 +16,7 @@ META.days=[0,1,2,3,4,5,6].map(i=>{const d=addDays(WE,-6+i);return [iso(d),d.toLo
 
 const $=id=>document.getElementById(id);
 function setStatus(tag,html){$('stTag').textContent=tag;$('status').innerHTML=html}
+const dlog=(lvl,msg,data)=>{try{window.SkylinksUtils.logEvent(lvl,'orders',msg,data)}catch(e){}};
 function setLoad(msg,frac){$('loadMsg').textContent=msg;if(frac!=null)$('loadBar').style.width=Math.round(frac*100)+'%'}
 function gmailUrl(m){const e=encodeURIComponent;return 'https://mail.google.com/mail/?view=cm&fs=1&to='+e(m.to||'')+'&su='+e(m.subject)+'&body='+e(m.body)}
 
@@ -85,11 +86,12 @@ async function getLsTab(){
     await new Promise(res=>{const f=(id,info)=>{if(id===tab.id&&info.status==='complete'){chrome.tabs.onUpdated.removeListener(f);res()}};chrome.tabs.onUpdated.addListener(f);setTimeout(res,20000)})}
   return tab;
 }
-async function run(tab,func,args=[]){const [r]=await chrome.scripting.executeScript({target:{tabId:tab.id},func,args});return r.result}
+async function run(tab,func,args=[]){try{const [r]=await chrome.scripting.executeScript({target:{tabId:tab.id},func,args});return r.result}catch(e){dlog('error','Lightspeed reader failed: '+func.name,e);throw e}}
 async function pull(){
   setLoad('Connecting to Lightspeed…',0.02);
   const tab=await getLsTab();
   const setup=await run(tab,lsSetup);
+  dlog('info','pull: setup read',{vendors:setup&&setup.vendors?setup.vendors.length:0,login:!!(setup&&setup.login)});
   if(!setup||setup.login)throw new Error('LOGIN');
   const sales={};const vs=setup.vendors;
   for(let i=0;i<vs.length;i++){
@@ -104,6 +106,7 @@ async function pull(){
   setLoad('Reading stock value…',0.96);
   const assets=await run(tab,lsAssets);
   const nRows=Object.values(sales).reduce((a,v)=>a+((v&&v.w4)||[]).length,0);
+  dlog('info','pull: sales rows read',{rows:nRows});
   if(!nRows)throw new Error('EMPTY');
   const raw={pulledAt:Date.now(),boxes:setup.boxes,sales,cats,disc,assets};
   await chrome.storage.local.set({['run2-'+META.weekEnd]:raw});
@@ -182,6 +185,7 @@ async function boot(force){
   if(!raw){
     $('app').hidden=true;$('loading').hidden=false;setStatus('Lightspeed','Pulling reports…');
     try{raw=await pull()}catch(e){
+      dlog(['EMPTY','LOGIN'].includes(String(e.message))?'warn':'error','pull failed',e);
       $('loading').hidden=true;
       if(String(e.message)==='EMPTY')setStatus('No data','Lightspeed returned no sales for this week. Make sure you\'re signed into <a href="'+LS+'" target="_blank">Lightspeed Retail</a>, then press <b>Refresh from Lightspeed</b>.');
       else if(String(e.message)==='LOGIN')setStatus('Sign in','Lightspeed isn\'t signed in. Open <a href="'+LS+'" target="_blank">Lightspeed Retail</a>, sign in, then press <b>Refresh from Lightspeed</b>.');

@@ -46,6 +46,17 @@
       border-top: 1px solid #e2e8f0;
     }
     .section + .btn { margin-top: 8px; }
+    .diag { display: flex; gap: 6px; margin-top: 6px; }
+    .btn-sm {
+      flex: 1;
+      font: 600 11px 'Montserrat', sans-serif;
+      padding: 6px 8px;
+      background: #fff;
+      color: #262b2f;
+      border: 1px solid #262b2f;
+      cursor: pointer;
+    }
+    .btn-sm:hover { background: #f1f5f9; }
     .hint {
       font-size: 11px;
       color: #94a3b8;
@@ -70,6 +81,8 @@
     <p>Skylinks Golf Club</p>
   </div>
   <div class="body" id="body"></div>
+  <script src="content/utils.js"></script>
+  <script src="content/core/log.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

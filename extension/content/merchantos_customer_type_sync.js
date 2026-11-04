@@ -300,7 +300,7 @@
       }
     } catch (err) {
       modal.setStatus('❌ Error: ' + err.message, 'error');
-      console.error('[LS Customer Type Sync] Error:', err);
+      log.error('Error', err);
       this.disabled = false;
       return;
     }
