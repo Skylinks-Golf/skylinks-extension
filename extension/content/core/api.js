@@ -19,6 +19,11 @@
       return { credentials: 'same-origin', headers: {} };
     }
 
+    // Host + path only: query strings can carry names, dates or tokens.
+    function logPath(url) {
+      try { const u = new URL(url, location.href); return u.hostname + u.pathname; } catch (_) { return String(url).split('?')[0]; }
+    }
+
     function buildUrl(path, query) {
       const url = baseUrl ? `${baseUrl}${path}` : path;
       if (!query || !Object.keys(query).length) return url;
@@ -39,13 +44,16 @@
       try {
         resp = await fetch(url, init);
       } catch (err) {
+        ns.logEvent && ns.logEvent('warn', 'api', `${method} ${logPath(url)} network error`, { message: err.message });
         throw ns.parseNetworkError(err, method, url);
       }
       if (!resp.ok) {
         // Read the body so 4xx reasons (e.g. a 422's validation message) reach
         // the UI instead of a bare "Request failed (422)."
         const text = await resp.text().catch(() => '');
-        throw ns.parseHttpError(resp, method, url, ns.extractErrorMessage(text));
+        const reason = ns.extractErrorMessage(text);
+        ns.logEvent && ns.logEvent('warn', 'api', `${method} ${logPath(url)} -> ${resp.status}`, { reason });
+        throw ns.parseHttpError(resp, method, url, reason);
       }
       return resp;
     }
@@ -61,6 +69,7 @@
         } catch (err) {
           if (attempt < maxAttempts && methods.includes(method)) {
             attempt++;
+            ns.logEvent && ns.logEvent('info', 'api', `retry ${attempt}/${maxAttempts} ${method} ${logPath(url)}`);
             await new Promise(res => setTimeout(res, r.delayMs || 1000));
           } else {
             throw err;

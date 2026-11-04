@@ -346,12 +346,11 @@
         '</div>';
     }
 
-    log('Raw response samples', {
-      summary:     summary?.model?.[0]    ?? summary?.models?.[0]    ?? summary?.model,
-      dispensers:  dispensers?.models?.[0],
-      byLocation:  byLocation?.models?.[0],
-      byHour:      byHour?.models?.[0],
-      byBucket:    byBucket?.models?.[0],
+    log('Response rows', {
+      dispensers:  dispensers?.models?.length ?? 0,
+      byLocation:  byLocation?.models?.length ?? 0,
+      byHour:      byHour?.models?.length ?? 0,
+      byBucket:    byBucket?.models?.length ?? 0,
     });
 
     return { summary, dispensers, byLocation, byHour, byBucket };

@@ -1,5 +1,8 @@
+const logEvent = (...a) => window.SkylinksUtils.logEvent && window.SkylinksUtils.logEvent(...a);
+
 const CORE_FILES = [
   'content/utils.js',
+  'content/core/log.js',
   'content/core/theme.js',
   'content/core/config.js',
   'content/core/dom.js',
@@ -52,6 +55,58 @@ function addPages(body) {
   });
 }
 
+// Diagnostics: lets staff copy the stored log to send to Ian (or paste to Claude).
+function addDiagnostics(body, tabUrl) {
+  const D = window.SkylinksUtils.diag;
+  const h = document.createElement('div');
+  h.className = 'section';
+  h.textContent = 'Diagnostics';
+  body.appendChild(h);
+
+  const info = document.createElement('p');
+  info.className = 'hint';
+  info.style.textAlign = 'left';
+  body.appendChild(info);
+
+  const row = document.createElement('div');
+  row.className = 'diag';
+  body.appendChild(row);
+
+  const refresh = async () => {
+    const entries = await D.getEntries();
+    const lastErr = [...entries].reverse().find(e => e.lvl === 'error');
+    info.textContent = `${entries.length} log entries` + (lastErr ? ` · last error: ${lastErr.msg}` : ' · no errors recorded');
+    return entries;
+  };
+  const tabHost = () => { try { return new URL(tabUrl).hostname; } catch (_) { return ''; } };
+
+  const mk = (label, fn) => {
+    const b = document.createElement('button');
+    b.className = 'btn-sm';
+    b.textContent = label;
+    b.onclick = async () => {
+      try { await fn(b); } catch (err) { logEvent('error', 'popup', `diagnostics ${label} failed`, err); }
+    };
+    row.appendChild(b);
+  };
+  mk('Copy log', async b => {
+    const text = D.formatLog(await D.getEntries(), { tab: tabHost() });
+    await navigator.clipboard.writeText(text);
+    b.textContent = 'Copied';
+    setTimeout(() => { b.textContent = 'Copy log'; }, 1500);
+  });
+  mk('Download', async () => {
+    const text = D.formatLog(await D.getEntries(), { tab: tabHost() });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+    a.download = 'skylinks-tools-log.txt';
+    a.click();
+  });
+  mk('Clear', async () => { await D.clear(); await refresh(); });
+
+  refresh();
+}
+
 chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
   const body = document.getElementById('body');
   const url = tab.url || '';
@@ -63,8 +118,17 @@ chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       btn.className = `btn ${tool.color}`;
       btn.textContent = tool.label;
       btn.onclick = () => {
-        chrome.scripting.executeScript({ target: { tabId: tab.id }, files: [...CORE_FILES, ...tool.files] });
-        window.close();
+        const host = (() => { try { return new URL(url).hostname; } catch (_) { return ''; } })();
+        logEvent('info', 'popup', `start: ${tool.label}`, { host });
+        chrome.scripting.executeScript({ target: { tabId: tab.id }, files: [...CORE_FILES, ...tool.files] })
+          .then(() => window.close())
+          .catch(err => {
+            logEvent('error', 'popup', `could not start: ${tool.label}`, err);
+            const msg = document.createElement('div');
+            msg.className = 'error';
+            msg.textContent = `Could not start "${tool.label}". Reload the page and try again. If it keeps happening, use Copy log below and send it to Ian.`;
+            body.insertBefore(msg, body.firstChild);
+          });
       };
       body.appendChild(btn);
     });
@@ -76,6 +140,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
   }
 
   addPages(body);
+  addDiagnostics(body, url);
 
   const hint = document.createElement('p');
   hint.className = 'hint';

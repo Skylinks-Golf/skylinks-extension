@@ -100,7 +100,7 @@ fragment ConversionRateAnalyticsFragment on ConversionRateAnalytics {
       if (!d) throw new Error('Unexpected response shape — conversionRateAnalyticsOverview missing.');
 
       ctx.setProgress(70);
-      log('Response received:', d);
+      log('Response received');
       return { d, mondayStr, sundayStr, prevMondayStr };
     },
 

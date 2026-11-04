@@ -208,10 +208,11 @@
           } catch (e) {
             const isAuth = e && e.code === 'AUTH';
             const msg = (e && e.message) ? e.message : 'An unexpected error occurred.';
-            const suffix = isAuth ? '' : ' Details in console.';
+            const suffix = isAuth ? '' : ' Open the Skylinks Tools popup, choose Copy log, and send it to Ian.';
             handle.setStatus('❌ ' + msg + suffix, 'error');
             handle.hideProgress();
             console.error('[Skylinks]', e);
+            window.SkylinksUtils.logEvent && window.SkylinksUtils.logEvent('error', 'modal', 'action failed', e);
           } finally {
             runBtn.disabled = false;
             runBtn.style.opacity = '1';

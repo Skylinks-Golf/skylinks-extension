@@ -5,7 +5,7 @@ const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
 const pretty=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 const short=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-function defaultWeekEnd(){const t=new Date();t.setHours(12,0,0,0);const day=t.getDay();return addDays(t,day===0?-7:-day)}
+function defaultWeekEnd(){const t=parseISO(window.SkylinksUtils.dates.todayPacific());const day=t.getDay();return addDays(t,day===0?-7:-day)}
 function parseISO(s){const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d,12)}
 
 const params=new URLSearchParams(location.search);
@@ -16,6 +16,7 @@ META.days=[0,1,2,3,4,5,6].map(i=>{const d=addDays(WE,-6+i);return [iso(d),d.toLo
 
 const $=id=>document.getElementById(id);
 function setStatus(tag,html){$('stTag').textContent=tag;$('status').innerHTML=html}
+const dlog=(lvl,msg,data)=>{try{window.SkylinksUtils.logEvent(lvl,'orders',msg,data)}catch(e){}};
 function setLoad(msg,frac){$('loadMsg').textContent=msg;if(frac!=null)$('loadBar').style.width=Math.round(frac*100)+'%'}
 function gmailUrl(m){const e=encodeURIComponent;return 'https://mail.google.com/mail/?view=cm&fs=1&to='+e(m.to||'')+'&su='+e(m.subject)+'&body='+e(m.body)}
 
@@ -85,11 +86,12 @@ async function getLsTab(){
     await new Promise(res=>{const f=(id,info)=>{if(id===tab.id&&info.status==='complete'){chrome.tabs.onUpdated.removeListener(f);res()}};chrome.tabs.onUpdated.addListener(f);setTimeout(res,20000)})}
   return tab;
 }
-async function run(tab,func,args=[]){const [r]=await chrome.scripting.executeScript({target:{tabId:tab.id},func,args});return r.result}
+async function run(tab,func,args=[]){try{const [r]=await chrome.scripting.executeScript({target:{tabId:tab.id},func,args});return r.result}catch(e){dlog('error','Lightspeed reader failed: '+func.name,e);throw e}}
 async function pull(){
   setLoad('Connecting to Lightspeed…',0.02);
   const tab=await getLsTab();
   const setup=await run(tab,lsSetup);
+  dlog('info','pull: setup read',{vendors:setup&&setup.vendors?setup.vendors.length:0,login:!!(setup&&setup.login)});
   if(!setup||setup.login)throw new Error('LOGIN');
   const sales={};const vs=setup.vendors;
   for(let i=0;i<vs.length;i++){
@@ -104,6 +106,7 @@ async function pull(){
   setLoad('Reading stock value…',0.96);
   const assets=await run(tab,lsAssets);
   const nRows=Object.values(sales).reduce((a,v)=>a+((v&&v.w4)||[]).length,0);
+  dlog('info','pull: sales rows read',{rows:nRows});
   if(!nRows)throw new Error('EMPTY');
   const raw={pulledAt:Date.now(),boxes:setup.boxes,sales,cats,disc,assets};
   await chrome.storage.local.set({['run2-'+META.weekEnd]:raw});
@@ -117,7 +120,8 @@ function packFor(name,pm){const k=norm(name);if(pm[k])return pm[k];for(const [rx
 const catOf=n=>{if(/Non-?\s?Alcoholic|Mocktail/i.test(n))return'NA';if(/^(Beer|Seltzer|Cider|Wine|Malt|Hard|Cocktail|Flybird|House Wine|Cantina|Margi|Viano)/.test(n))return'ALC';if(/^(Candy|Snack|Chips|Ice|Cookies|Protein Bar)/.test(n))return'SNK';if(/^(Soda|Juice|Tea|Sportsdrink|Energy|Water|Sparkling|Milk|Protein|Coffee|Crystal|El Jefe|Creatine)/.test(n))return'NA';return'MER'};
 const styleOf=n=>/Non-?\s?Alc/i.test(n)?'Non-alcoholic beer':/Modelo|Pacifico|Corona|Tecate|Chelada|Mexican|Calidad|Pachuco/.test(n)?'Mexican lager':/Coors|Miller|Bud|Michelob|Stella|Heineken|Garage|Blue Moon|Guin/.test(n)?'Domestic & import':/Hazy|Haze|Juicy|Dust|IPA|Ipa|IPNA|DIPA|Pale|Hoppy|Torpedo|Racer|Dankness|Bunny|Lil Sumpin/.test(n)?'IPA & hazy':/Lager|Pils|Helles|Fest|Oktober|Blonde|Pool|Cerveza/.test(n)?'Craft lager & pils':'Wheat, sour, stout & other';
 const subOf=n=>/^Beer/.test(n)?'Beer':/^Seltzer/.test(n)?'Seltzer':/^Cider/.test(n)?'Cider':/Shooter/.test(n)?'Shooters':/^(Wine Cocktail|Wine - Cocktail|Cocktail|Flybird)|Sabe/.test(n)?'Wine cocktails':/^Wine|House Wine|Viano/.test(n)?'Wine':/^Hard|Malt/.test(n)?'Hard tea, malt & kombucha':'In-house';
-function codeOf(name){if(NAME2CODE[name])return NAME2CODE[name];if(!V[name])V[name]={n:name,m:'email',c:'',e:'',cad:'Unknown',g:2};return name}
+// Unlisted vendors get a code that is safe in HTML attributes and selectors; the name is only ever shown through esc().
+function codeOf(name){if(NAME2CODE[name])return NAME2CODE[name];const code='X_'+String(name).replace(/[^A-Za-z0-9]/g,c=>'_'+c.charCodeAt(0).toString(16));if(!V[code])V[code]={n:name,m:'email',c:'',e:'',cad:'Unknown',g:2};return code}
 function compute(raw){
   const pm=packMap(raw.boxes);const D={};
   for(const [vname,r] of Object.entries(raw.sales)){const v=codeOf(vname);
@@ -182,6 +186,7 @@ async function boot(force){
   if(!raw){
     $('app').hidden=true;$('loading').hidden=false;setStatus('Lightspeed','Pulling reports…');
     try{raw=await pull()}catch(e){
+      dlog(['EMPTY','LOGIN'].includes(String(e.message))?'warn':'error','pull failed',e);
       $('loading').hidden=true;
       if(String(e.message)==='EMPTY')setStatus('No data','Lightspeed returned no sales for this week. Make sure you\'re signed into <a href="'+LS+'" target="_blank">Lightspeed Retail</a>, then press <b>Refresh from Lightspeed</b>.');
       else if(String(e.message)==='LOGIN')setStatus('Sign in','Lightspeed isn\'t signed in. Open <a href="'+LS+'" target="_blank">Lightspeed Retail</a>, sign in, then press <b>Refresh from Lightspeed</b>.');
@@ -192,7 +197,7 @@ async function boot(force){
   }
   if(!raw.cats||!raw.cats.pw){raw=null;return boot(true)}
   const out=compute(raw);window.DATA=out.DATA;window.COST=out.COST;window.MONEY=out.MONEY;
-  $('mPulled').textContent=new Date(raw.pulledAt).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  $('mPulled').textContent=new Date(raw.pulledAt).toLocaleString('en-US',{timeZone:'America/Los_Angeles',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
   setStatus('Read only',`Pulled from Lightspeed. ${fmt(DATA.neg)} of ${fmt(DATA.count)} selling items show negative stock; those use <b>replace what sold</b> (buy back last week's units, rounded up to whole cases). Nothing is ordered or sent until you do it.`);
   $('loading').hidden=true;$('app').hidden=false;
   renderAll();

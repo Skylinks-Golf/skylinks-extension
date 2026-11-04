@@ -107,7 +107,7 @@
       const adminTotal    = totals.Admin;
       const combinedTotal = proshopTotal + adminTotal;
 
-      log(`Proshop: ${proshopTotal.toFixed(2)} h, Admin: ${adminTotal.toFixed(2)} h, Combined: ${combinedTotal.toFixed(2)} h`);
+      log('Hours totals computed');
 
       return { allAreaRows, proshopTotal, adminTotal, combinedTotal, rosterCount: rosterData.length };
     },
