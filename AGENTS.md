@@ -6,8 +6,7 @@ Agent-facing entry point for this repo. Read this first.
 
 - **Chrome extension** lives in `extension/`. This is the **only** Skylinks Chrome extension. Add new browser tools here (as a per-site content script plus a `popup.js` entry); do not start or maintain a separate extension elsewhere.
 - **Shared claude.ai Artifacts** live in `artifacts/`. See `artifacts/README.md`.
-- Everyone (admins, LC, Ian, and their agents) works on a `<initials>/<topic>` branch and opens a PR. Never push to `main`; agents commit or push only when asked.
-- Never commit secrets, card data, payroll, or customer/member PII, including "example" exports. Use synthetic sample data.
+- **Read [PROTOCOLS.md](PROTOCOLS.md) before any change.** It covers git workflow (branch + PR, never push to `main`, destructive actions need typed approval), data rules (public repo: no secrets, card data, payroll or PII, synthetic samples only), live-system and ordering approvals, and the pre-done checklist.
 
 Paths below are relative to `extension/` unless they start with `artifacts/`.
 
