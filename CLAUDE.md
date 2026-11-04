@@ -1,3 +1,6 @@
 # CLAUDE.md
 
-See [AGENTS.md](AGENTS.md) for the agent guide to this repo.
+Read and follow these before planning or editing anything in this repo.
+
+@AGENTS.md
+@PROTOCOLS.md
