@@ -199,3 +199,12 @@ Filename format: teesheet_YYYY-MM-DD_club2534.json
 
 Key API endpoints discovered
 EndpointPurpose/private_api/teesheets?course_id=&date=&on=All tee time slots (times, holes, format)/private_api/reservations?course_id=&date=&on=All reservations + player/customer datalocalStorage['chronogolf.{clubId}.appState']Gets courseId & organizationId automatically
+
+## Running it from Claude (no popup)
+
+The popup button is the normal way to export. Claude can't click the extension, so it runs the same fetch-and-join logic (steps 1 to 7 above) directly in a signed-in Chronogolf tab through Claude in Chrome, then uploads the saved file to Drive. Notes from the first run (2026-11-10):
+
+- Use the Pacific date: `new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date())`. The sample script above uses UTC, which gives tomorrow's date after about 4 PM Pacific.
+- Chrome blocks scripted downloads and requests from the tab to the local machine until the person allows them for `chronogolf.com` (site settings: Automatic downloads, and Local network access). Without that, the file never saves and the script appears to hang.
+- Run the script with top-level `await` and return only the `export_meta` counts, never the reservations. The file contains player names, emails and phone numbers.
+- Upload to the private `teesheet_exports` folder in Drive by file reference, so the player details never pass through chat. Don't commit exports to this repo (see PROTOCOLS.md section 2).

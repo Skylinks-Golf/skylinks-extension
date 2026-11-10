@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Skylinks Tools",
-  "version": "1.10",
+  "version": "1.11",
   "description": "Tool Modules for Skylinks",
   "permissions": ["activeTab", "scripting", "tabs", "clipboardWrite", "storage"],
   "host_permissions": [

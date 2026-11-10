@@ -5,7 +5,7 @@
   const { escHtml, makeLogger, createModal, apiClient, download, runReport } = window.SkylinksUtils;
   const log = makeLogger('Tee Sheet Export');
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = window.SkylinksUtils.dates.todayPacific();
 
   const api = apiClient({ baseUrl: BASE, auth: 'cookie' });
 
