@@ -2,6 +2,9 @@
 
 Newest first. Bump `version` in `manifest.json` for any user-visible change and add a line here.
 
+## 1.11
+- Export Tee Sheet: the default date is now today in Pacific time. It used UTC, so after about 4 PM Pacific it defaulted to tomorrow.
+
 ## 1.10
 - Pro Shop Orders: the page now says plainly that it doesn't fill carts yet and that staff add the items themselves, instead of pointing to Claude filling them.
 
