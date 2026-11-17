@@ -15,7 +15,10 @@
     "https://dashboard.stripe.com/*",
     "https://www.sipmarket.com/*",
     "https://sfnaturals.pepr.app/*",
-    "https://shop.sgproof.com/*"
+    "https://shop.sgproof.com/*",
+    "https://now.breakthrubev.com/*",
+    "https://apps.vtinfo.com/*",
+    "https://shop.musclefoodsusa.com/*"
   ],
   "icons": {
     "16": "icons/icon16.png",

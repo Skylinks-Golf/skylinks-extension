@@ -55,6 +55,7 @@ content/
   vendor/chart.umd.min.js # Vendored Chart.js
 orders/                  # Pro Shop Orders — a full extension page (app.html/app.js/config.js), not a content script.
                          # Opened from the popup's "Pro Shop Orders" buttons; reads Lightspeed via executeScript({func}). See orders/README.md
+                         # orders/portals.js (+ sipmarket.js): vendor cart fill, one module per ordering portal (PORTALS). Stops at the cart.
 icons/                   # Toolbar icons (16/24/32/48/128)
 docs/                    # Vendor API references and walkthroughs (no real data)
 docs/history/             # Old specs, plans and reviews (project history, not current guidance; may be out of date)

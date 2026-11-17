@@ -296,6 +296,10 @@ async function fillPortal(v){
   else if(st==='list'){
    say(`<b>${nm}:</b> signed in. Adding ${todo.length} items… keep the ${esc(P_.site)} tab open.`);
    let res;try{res=await exec(P_.fill,[todo])}catch(e){say(`${nm}: something went wrong while filling the cart (${esc(String(e.message||e).slice(0,120))}). Nothing was submitted.`);dlog('error',v.code+': fill failed',e);return}
+   // A portal whose Add to Cart loads a new page returns pending lines; confirm them on the cart once it has loaded.
+   if(res.pending&&res.pending.length&&P_.verify){say(`<b>${nm}:</b> adding to the cart…`);let ok=null;
+    for(let k=0;k<6&&!ok;k++){await wait(4000);try{ok=await exec(P_.verify,[res.pending])}catch(e){}}
+    if(ok){res.added=res.added.concat(ok.added);res.skipped=res.skipped.concat(ok.skipped)}else res.skipped=res.skipped.concat(res.pending.map(x=>[x[0],'not confirmed in the cart; check it']))}
    const cases=res.added.reduce((a,x)=>a+x[1],0);
    const sk=res.skipped.concat(pick.map(l=>[l.item,`not matched to a ${P_.site} item yet (needs your pick)`]));
    say(`<b>${nm}: ${res.added.length} items, ${cases} cases added${res.total?', cart '+esc(res.total):''}.</b>${P_.note?esc(P_.note(res)):''} Review the cart in its tab and submit it yourself.`+
