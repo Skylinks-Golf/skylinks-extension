@@ -264,12 +264,45 @@ const TRIGGER_ID='trig_01SrVuzLnSXubNnWhqiZKi9R';
 function payload(){return {weekOf:WEEK_OF,vendors:picked().map(v=>{const x=V[v];return {code:v,name:x.n,method:x.m,url:x.url||'',rep:x.c||'',email:x.e||'',phone:x.p||'',lines:lines(v).map(i=>({item:i.n,cases:q(i),pack:i.keg?'keg':i.pk}))}})}}
 async function go(){const btn=document.getElementById('goBtn'),msg=document.getElementById('goMsg');const P=payload();if(!P.vendors.length)return;btn.disabled=true;
  const portals=P.vendors.filter(v=>v.method==='portal'&&v.url),mails=P.vendors.filter(v=>v.method==='email');
- for(const v of portals)await chrome.tabs.create({url:v.url,active:false});
+ const auto=portals.filter(v=>PORTALS[v.code]);
+ for(const v of portals)if(!PORTALS[v.code])await chrome.tabs.create({url:v.url,active:false});
  for(const v of mails){const m=email(v.code);await chrome.tabs.create({url:gmail(m),active:false})}
  const t='Fill this week\'s Pro Shop carts (I am signed in to the vendor tabs):\n'+JSON.stringify(P);
  try{await navigator.clipboard.writeText(t)}catch(e){}
- msg.className='gomsg ok';msg.innerHTML=`<b>Opened ${portals.length} vendor tabs and ${mails.length} Gmail emails.</b> Sign into each vendor tab and add the items to its cart using the list under <b>See items</b>, then review and submit. Review and send each email yourself. The full order is also copied, in case you want it in a Claude chat. <button class="btn ghost sm" id="fbCopy">Copy order again</button>`;
- document.getElementById('fbCopy').onclick=e=>copy(t,e.target);btn.disabled=false}
+ const manual=portals.filter(v=>!PORTALS[v.code]);
+ msg.className='gomsg ok';msg.innerHTML=`<b>Opened ${portals.length} vendor tabs and ${mails.length} Gmail emails.</b>`+
+  (auto.length?`<ul class="pmsg">${auto.map(v=>`<li id="pm-${v.code}">${esc(v.name)}: opening ${esc(PORTALS[v.code].site)}…</li>`).join('')}</ul>`:'')+
+  (manual.length?`For ${manual.map(v=>esc(v.name)).join(', ')}, sign in and add the items using the list under <b>See items</b>. `:'')+
+  `Review each cart and submit it yourself; review and send each email yourself. <button class="btn ghost sm" id="fbCopy">Copy order</button>`;
+ document.getElementById('fbCopy').onclick=e=>copy(t,e.target);btn.disabled=false;
+ dlog('info','go: tabs opened',{portals:portals.length,auto:auto.length,mails:mails.length});
+ auto.forEach(v=>fillPortal(v))}
+
+/* Portal cart fill (see orders/portals.js): opens the vendor's list page, checks every 10 s until staff are signed in
+   (up to 45 min), then adds each approved line by that vendor's item map and stops at the cart. Never checks out. */
+async function fillPortal(v){
+ const P_=PORTALS[v.code];const say=h=>{const e=document.getElementById('pm-'+v.code);if(e)e.innerHTML=h};const wait=ms=>new Promise(r=>setTimeout(r,ms));const nm=esc(v.name);
+ const lines=v.lines.filter(l=>l.cases>0).map(l=>({item:l.item,cases:l.cases,sku:P_.sku(l.item)}));
+ const todo=lines.filter(l=>l.sku),pick=lines.filter(l=>!l.sku);
+ const tab=await chrome.tabs.create({url:P_.start,active:false});const t0=Date.now();
+ const exec=async(func,args=[])=>{const [r]=await chrome.scripting.executeScript({target:{tabId:tab.id},func,args});return r.result};
+ await wait(3000);
+ while(Date.now()-t0<45*60e3){
+  try{await chrome.tabs.get(tab.id)}catch(e){say(`${nm}: the ${esc(P_.site)} tab was closed, so the cart was not filled. Press the button again to retry.`);dlog('warn',v.code+': tab closed');return}
+  let st;try{st=(await exec(P_.state)).state}catch(e){st='loading'}
+  const go2=P_.relist(st);
+  if(st==='signin'){say(`<b>${nm}:</b> sign into ${esc(P_.site)} in its tab. I check every 10 seconds and start as soon as you're in.`)}
+  else if(go2){await chrome.tabs.update(tab.id,{url:go2});await wait(4000);continue}
+  else if(st==='list'){
+   say(`<b>${nm}:</b> signed in. Adding ${todo.length} items… keep the ${esc(P_.site)} tab open.`);
+   let res;try{res=await exec(P_.fill,[todo])}catch(e){say(`${nm}: something went wrong while filling the cart (${esc(String(e.message||e).slice(0,120))}). Nothing was submitted.`);dlog('error',v.code+': fill failed',e);return}
+   const cases=res.added.reduce((a,x)=>a+x[1],0);
+   const sk=res.skipped.concat(pick.map(l=>[l.item,`not matched to a ${P_.site} item yet (needs your pick)`]));
+   say(`<b>${nm}: ${res.added.length} items, ${cases} cases added${res.total?', cart '+esc(res.total):''}.</b>${P_.note?esc(P_.note(res)):''} Review the cart in its tab and submit it yourself.`+
+    (sk.length?`<details><summary>${sk.length} not added</summary><ul>${sk.map(x=>`<li>${esc(x[0])}: ${esc(x[1])}</li>`).join('')}</ul></details>`:''));
+   dlog('info',v.code+': cart filled',{added:res.added.length,cases,skipped:sk.length});return}
+  await wait(10000)}
+ say(`${nm}: no ${esc(P_.site)} sign-in after 45 minutes, so the cart was not filled. Press the button again when you're ready.`);dlog('warn',v.code+': timed out')}
 document.addEventListener('click',e=>{if(e.target&&e.target.id==='goBtn')go()});
 function copy(t,btn,keepLabel){const done_=()=>{if(keepLabel)return;const o=btn.textContent;btn.textContent='Copied';setTimeout(()=>btn.textContent=o,1500)};const fb=()=>{const w=document.getElementById('copyWrap');w.hidden=false;const b=document.getElementById('copybox');b.value=t;b.focus();b.select()};try{navigator.clipboard.writeText(t).then(done_,fb)}catch(e){fb()}}
 render();
