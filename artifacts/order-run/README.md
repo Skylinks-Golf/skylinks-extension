@@ -17,7 +17,15 @@ Weekly Pro Shop reorder worksheet: last week's sales, ideas (selling faster / ch
 - **Par:** pace × weeks until the next delivery, plus a cushion.
 - **Cases:** what it takes to get back to par, rounded up to whole cases and capped at about 4 weeks of sales (1 case is always allowed).
 - **Negative stock:** when Lightspeed shows negative stock, the order replaces last week's sales instead of filling to par.
-- **Nothing is ordered or sent from the page.** Staff place orders. Quantity edits and Done checks are saved only in that browser.
+- **Nothing is ordered or sent from the page.** Staff place orders. Quantity edits are saved only in that browser.
+
+## Fill my carts
+
+- One button. It starts the "Fill Pro Shop Vendor Carts" Claude task (the staff member's own, set up once with **Set up on this computer**), passing the checked vendors and case counts. The instructions it runs are `FILL_PROMPT` in the page.
+- Claude opens a tab for every checked order-online vendor in the staff member's Chrome, then fills one cart at a time from that vendor's saved reorder list or order guide. Signed-out tabs are re-checked every minute for 15 minutes.
+- The page no longer opens vendor tabs itself: Chrome allows a page one new tab per click, so opening several at once only ever opened the first. The vendor name buttons under **Fill my carts** are for signing in ahead of time.
+- Gate: only portals with Status "Active" and "Approved by" set in Notion Ordering Sources, under the "LC — ordering module vendor portals, edit live" Agent Permissions row. Stops at the cart; never checks out, submits or handles logins.
+- Email vendors get Gmail drafts, never sent.
 
 ## Data rules
 
