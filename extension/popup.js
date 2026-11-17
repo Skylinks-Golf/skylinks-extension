@@ -1,57 +1,34 @@
 const logEvent = (...a) => window.SkylinksUtils.logEvent && window.SkylinksUtils.logEvent(...a);
 
-const CORE_FILES = [
-  'content/utils.js',
-  'content/core/log.js',
-  'content/core/theme.js',
-  'content/core/config.js',
-  'content/core/dom.js',
-  'content/core/dates.js',
-  'content/core/errors.js',
-  'content/core/api.js',
-  'content/core/paginate.js',
-  'content/core/csv.js',
-  'content/core/format.js',
-  'content/core/download.js',
-  'content/core/copy.js',
-  'content/core/table.js',
-  'content/core/modal.js',
-  'content/core/workflow.js',
-  'content/core/preflight.js',
-];
+// Tools come from the module registry (modules/registry.js + modules/<id>/module.js).
+const Mods = window.SkylinksModules;
 
-const TOOLS = [
-  { match: url => url.includes('us.merchantos.com'), label: 'Daily Snapshot Report', color: 'btn-blue', files: ['content/vendor/chart.umd.min.js', 'content/snapshot_merchantos.js'] },
-  { match: url => url.includes('us.merchantos.com'), label: 'Sales Lines Report', color: 'btn-blue', files: ['content/merchantos.js'] },
-  { match: url => url.includes('us.merchantos.com'), label: 'Sync Customer Type', color: 'btn-green', files: ['content/merchantos_customer_type_sync.js'] },
-  { match: url => url.includes('chronogolf.ca') || url.includes('chronogolf.com'), label: 'Import Customers', color: 'btn-green', files: ['content/chronogolf.js'] },
-  { match: url => url.includes('chronogolf.ca') || url.includes('chronogolf.com'), label: 'Export Tee Sheet', color: 'btn-teal', files: ['content/tee_sheet_export.js'] },
-  { match: url => url.includes('portal.getselectpi.com'), label: 'Daily Snapshot Report', color: 'btn-purple', files: ['content/vendor/chart.umd.min.js', 'content/snapshot_selectpi.js'] },
-  { match: url => url.includes('portal.getselectpi.com'), label: 'Weekly Earnings Report', color: 'btn-purple', files: ['content/selectpi.js'] },
-  { match: url => url.includes('app.perfectvenue.com'), label: 'Weekly Analytics Report', color: 'btn-orange', files: ['content/perfectvenue.js'] },
-  { match: url => url.includes('348a3926020407.na.deputy.com'), label: 'Weekly Hours Report', color: 'btn-teal', files: ['content/deputy.js'] },
-  { match: url => url.includes('dashboard.stripe.com'), label: 'Save Stripe Report', color: 'btn-blue', files: ['content/stripe.js'] },
-];
+// Load each enabled module's descriptor, in order. A module that fails to load is logged
+// and skipped so one bad module can't blank the popup.
+function loadModules() {
+  return Promise.all(Mods.enabled.map(id => new Promise(resolve => {
+    const s = document.createElement('script');
+    s.src = `modules/${id}/module.js`;
+    s.onload = resolve;
+    s.onerror = () => { logEvent('error', 'popup', `module failed to load: ${id}`); resolve(); };
+    document.head.appendChild(s);
+  })));
+}
 
-// Extension pages (not content scripts). Shown on every site; each opens orders/app.html#<tab>.
-const PAGES = [
-  { label: "Last Week's Sales", page: 'orders/app.html#sales' },
-  { label: 'Money (Profit & Leaks)', page: 'orders/app.html#money' },
-  { label: 'Add / Cut / Swap Ideas', page: 'orders/app.html#ideas' },
-  { label: "This Week's Order", page: 'orders/app.html#order' },
-];
-
-function addPages(body) {
-  const h = document.createElement('div');
-  h.className = 'section';
-  h.textContent = 'Pro Shop Orders';
-  body.appendChild(h);
-  PAGES.forEach(p => {
-    const btn = document.createElement('button');
-    btn.className = 'btn';
-    btn.textContent = p.label;
-    btn.onclick = () => { chrome.tabs.create({ url: chrome.runtime.getURL(p.page) }); window.close(); };
-    body.appendChild(btn);
+// Extension pages (not content scripts). Shown on every site, under the module's name.
+function addPages(body, modules) {
+  modules.filter(m => (m.pages || []).length).forEach(m => {
+    const h = document.createElement('div');
+    h.className = 'section';
+    h.textContent = m.name;
+    body.appendChild(h);
+    m.pages.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'btn';
+      btn.textContent = p.label;
+      btn.onclick = () => { chrome.tabs.create({ url: chrome.runtime.getURL(p.page) }); window.close(); };
+      body.appendChild(btn);
+    });
   });
 }
 
@@ -107,11 +84,16 @@ function addDiagnostics(body, tabUrl) {
   refresh();
 }
 
-chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+chrome.tabs.query({ active: true, currentWindow: true }, async ([tab]) => {
   const body = document.getElementById('body');
   const url = tab.url || '';
 
-  const matchingTools = TOOLS.filter(tool => tool.match(url));
+  await loadModules();
+  // Registration order is popup order: modules in index order, tools in descriptor order.
+  const modules = Mods.enabled.map(id => Mods.list.find(m => m.id === id)).filter(Boolean);
+  const matchingTools = [];
+  modules.filter(m => Mods.matches(m, url)).forEach(m => (m.tools || []).forEach(t => matchingTools.push(t)));
+
   if (matchingTools.length > 0) {
     matchingTools.forEach(tool => {
       const btn = document.createElement('button');
@@ -120,7 +102,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       btn.onclick = () => {
         const host = (() => { try { return new URL(url).hostname; } catch (_) { return ''; } })();
         logEvent('info', 'popup', `start: ${tool.label}`, { host });
-        chrome.scripting.executeScript({ target: { tabId: tab.id }, files: [...CORE_FILES, ...tool.files] })
+        chrome.scripting.executeScript({ target: { tabId: tab.id }, files: [...Mods.coreFiles, ...tool.files] })
           .then(() => window.close())
           .catch(err => {
             logEvent('error', 'popup', `could not start: ${tool.label}`, err);
@@ -133,13 +115,14 @@ chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       body.appendChild(btn);
     });
   } else {
+    const names = modules.filter(m => (m.tools || []).length).map(m => m.name);
     const msg = document.createElement('div');
     msg.className = 'error';
-    msg.textContent = 'Navigate to Lightspeed Retail, Lightspeed Golf, the SelectPi Portal, Perfect Venue, Deputy, or Stripe to use these tools.';
+    msg.textContent = `Navigate to ${names.length > 1 ? names.slice(0, -1).join(', ') + ', or ' + names[names.length - 1] : names[0] || 'a supported site'} to use these tools.`;
     body.appendChild(msg);
   }
 
-  addPages(body);
+  addPages(body, modules);
   addDiagnostics(body, url);
 
   const hint = document.createElement('p');

@@ -44,7 +44,7 @@ Details are in [AGENTS.md](AGENTS.md) and `extension/docs/adding_a_new_tool.md`.
 
 - One Chrome extension, in `extension/`. Don't start another.
 - Per-site code in `content/<vendor>.js`. Shared behavior in `content/core/*.js` through `window.SkylinksUtils`. Don't re-implement modals, CSV, dates or API calls.
-- New content scripts are registered in `popup.js`, not declared in the manifest. A tool that needs its own full page goes in its own folder and is listed in `PAGES`.
+- New features are modules: a folder `extension/modules/<id>/` with a `module.js` descriptor, listed in `modules/index.js`. Content scripts are injected from the module's `tools[].files`, not declared in the manifest. A tool that needs its own full page lists it in the module's `pages`.
 - **Time is Pacific, via `Intl` with `America/Los_Angeles`.** Never `getTimezoneOffset()`.
 - Money prints as `$42.00`. Dates are ISO (`2026-11-03`) in data and `Nov 3, 2026` in prose.
 - Log through `makeLogger` (see AGENTS.md). Log what happened, never customer records, contact details, card data or tokens.

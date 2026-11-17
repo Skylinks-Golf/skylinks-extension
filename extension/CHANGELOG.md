@@ -2,6 +2,9 @@
 
 Newest first. Bump `version` in `manifest.json` for any user-visible change and add a line here.
 
+## 1.12
+- Tools are now plug-in modules (`modules/<id>/module.js`). The popup builds itself from them, so new features no longer touch `popup.js`. Existing buttons are unchanged. Lightspeed Golf buttons now match only `www.chronogolf.ca/.com`, the hosts the extension already has permission for.
+
 ## 1.11
 - Export Tee Sheet: the default date is now today in Pacific time. It used UTC, so after about 4 PM Pacific it defaulted to tomorrow.
 
