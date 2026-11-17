@@ -279,7 +279,12 @@ async function go(){const btn=document.getElementById('goBtn'),msg=document.getE
  auto.forEach(v=>fillPortal(v))}
 
 /* Portal cart fill (see orders/portals.js): opens the vendor's list page, checks every 10 s until staff are signed in
-   (up to 45 min), then adds each approved line by that vendor's item map and stops at the cart. Never checks out. */
+   (up to 45 min), then adds each approved line by that vendor's item map and stops at the cart. Never checks out.
+   Chrome slows timers in background tabs (to once a minute after ~5 min), which stalled fills mid-list, so fills run
+   one vendor at a time with that vendor's tab in front; sign-in waits still run in parallel. */
+let fillQueue=Promise.resolve();
+function inTurn(fn){const p=fillQueue.then(fn,fn);fillQueue=p.catch(()=>{});return p}
+async function toFront(tabId){try{const t=await chrome.tabs.update(tabId,{active:true});await chrome.windows.update(t.windowId,{focused:true})}catch(e){}}
 async function fillPortal(v){
  const P_=PORTALS[v.code];const say=h=>{const e=document.getElementById('pm-'+v.code);if(e)e.innerHTML=h};const wait=ms=>new Promise(r=>setTimeout(r,ms));const nm=esc(v.name);
  const lines=v.lines.filter(l=>l.cases>0).map(l=>({item:l.item,cases:l.cases,sku:P_.sku(l.item)}));
@@ -294,19 +299,37 @@ async function fillPortal(v){
   if(st==='signin'){say(`<b>${nm}:</b> sign into ${esc(P_.site)} in its tab. I check every 10 seconds and start as soon as you're in.`)}
   else if(go2){await chrome.tabs.update(tab.id,{url:go2});await wait(4000);continue}
   else if(st==='list'){
-   say(`<b>${nm}:</b> signed in. Adding ${todo.length} items… keep the ${esc(P_.site)} tab open.`);
-   let res;try{res=await exec(P_.fill,[todo])}catch(e){say(`${nm}: something went wrong while filling the cart (${esc(String(e.message||e).slice(0,120))}). Nothing was submitted.`);dlog('error',v.code+': fill failed',e);return}
-   // A portal whose Add to Cart loads a new page returns pending lines; confirm them on the cart once it has loaded.
-   if(res.pending&&res.pending.length&&P_.verify){say(`<b>${nm}:</b> adding to the cart…`);let ok=null;
-    for(let k=0;k<6&&!ok;k++){await wait(4000);try{ok=await exec(P_.verify,[res.pending])}catch(e){}}
-    if(ok){res.added=res.added.concat(ok.added);res.skipped=res.skipped.concat(ok.skipped)}else res.skipped=res.skipped.concat(res.pending.map(x=>[x[0],'not confirmed in the cart; check it']))}
+   say(`<b>${nm}:</b> signed in. Waiting for the vendor ahead of it to finish…`);
+   const res=await inTurn(()=>fillInFront(v,P_,tab,exec,todo,say,nm));
+   if(!res)return;
    const cases=res.added.reduce((a,x)=>a+x[1],0);
+   if(res.error){say(`${nm}: something went wrong while filling the cart (${esc(res.error)}). Nothing was submitted.`);return}
    const sk=res.skipped.concat(pick.map(l=>[l.item,`not matched to a ${P_.site} item yet (needs your pick)`]));
    say(`<b>${nm}: ${res.added.length} items, ${cases} cases added${res.total?', cart '+esc(res.total):''}.</b>${P_.note?esc(P_.note(res)):''} Review the cart in its tab and submit it yourself.`+
     (sk.length?`<details><summary>${sk.length} not added</summary><ul>${sk.map(x=>`<li>${esc(x[0])}: ${esc(x[1])}</li>`).join('')}</ul></details>`:''));
    dlog('info',v.code+': cart filled',{added:res.added.length,cases,skipped:sk.length});return}
   await wait(10000)}
  say(`${nm}: no ${esc(P_.site)} sign-in after 45 minutes, so the cart was not filled. Press the button again when you're ready.`);dlog('warn',v.code+': timed out')}
+// One vendor's fill, in its turn: bring its tab to the front, re-check it is still on the list page, fill, then
+// confirm pending lines (Breakthru), and come back to this page. Returns the result, or null if the tab went away.
+async function fillInFront(v,P_,tab,exec,todo,say,nm){
+ const wait=ms=>new Promise(r=>setTimeout(r,ms));
+ try{await chrome.tabs.get(tab.id)}catch(e){say(`${nm}: the ${esc(P_.site)} tab was closed, so the cart was not filled. Press the button again to retry.`);dlog('warn',v.code+': tab closed before fill');return null}
+ const me=await chrome.tabs.getCurrent().catch(()=>null);
+ await toFront(tab.id);await wait(1500);
+ let st;try{st=(await exec(P_.state)).state}catch(e){st='loading'}
+ for(let k=0;k<10&&st!=='list';k++){await wait(1500);try{st=(await exec(P_.state)).state}catch(e){st='loading'}}
+ if(st!=='list'){say(`${nm}: the ${esc(P_.site)} tab left its list page before filling, so the cart was not filled. Press the button again to retry.`);dlog('warn',v.code+': not on list at fill',{st});if(me)await toFront(me.id);return null}
+ say(`<b>${nm}:</b> adding ${todo.length} items now. Leave the ${esc(P_.site)} tab in front until it finishes; switching tabs slows it down.`);
+ dlog('info',v.code+': fill start',{items:todo.length});const t0=Date.now();
+ let res;try{res=await exec(P_.fill,[todo])}catch(e){dlog('error',v.code+': fill failed',e);if(me)await toFront(me.id);return {added:[],skipped:[],error:String(e.message||e).slice(0,120)}}
+ if(res.pending&&res.pending.length&&P_.verify){say(`<b>${nm}:</b> adding to the cart…`);let ok=null;
+  for(let k=0;k<6&&!ok;k++){await wait(4000);try{ok=await exec(P_.verify,[res.pending])}catch(e){}}
+  if(ok){res.added=res.added.concat(ok.added);res.skipped=res.skipped.concat(ok.skipped)}else res.skipped=res.skipped.concat(res.pending.map(x=>[x[0],'not confirmed in the cart; check it']));
+  delete res.pending}
+ dlog('info',v.code+': fill done',{added:res.added.length,skipped:res.skipped.length,seconds:Math.round((Date.now()-t0)/1000)});
+ if(me)await toFront(me.id);
+ return res}
 document.addEventListener('click',e=>{if(e.target&&e.target.id==='goBtn')go()});
 function copy(t,btn,keepLabel){const done_=()=>{if(keepLabel)return;const o=btn.textContent;btn.textContent='Copied';setTimeout(()=>btn.textContent=o,1500)};const fb=()=>{const w=document.getElementById('copyWrap');w.hidden=false;const b=document.getElementById('copybox');b.value=t;b.focus();b.select()};try{navigator.clipboard.writeText(t).then(done_,fb)}catch(e){fb()}}
 render();
