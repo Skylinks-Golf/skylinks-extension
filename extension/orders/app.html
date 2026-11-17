@@ -116,6 +116,7 @@ ul.recs .k{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:upp
 .summary-bar .btn{background:var(--gold);color:#000;border-color:var(--gold)}
 textarea#copybox{width:100%;height:160px;font:12px var(--f-mono);margin-top:10px;background:var(--surface);color:var(--fg);border:1px solid var(--line);padding:8px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.pmsg{margin:6px 0;padding-left:18px}.pmsg li{margin:3px 0}
 </style><style>
 /* simplified layout additions */
 .top-sum{display:flex;flex-wrap:wrap;gap:6px 24px;align-items:baseline;margin:22px 0 6px}
@@ -170,7 +171,7 @@ details.how summary{cursor:pointer;font-weight:700;font-size:13px}
   <section class="panel" id="p-order">
     <div class="top-sum"><span class="big" id="sumBig">—</span><span class="sub" id="sumSub"></span></div>
     <p class="howto">Check which vendors to include and adjust any case counts under <b>See items</b> (0 removes an item). Then press the gold button: it opens each vendor's site and a ready-to-send Gmail email for each rep. You sign in, add the items to each cart, review, and press Submit and Send yourself.</p>
-    <div class="gobar"><button class="btn go big" id="goBtn">Open vendor tabs &amp; emails</button><div class="gomsg" id="goMsg">This page doesn't fill carts yet. After you sign in, add each vendor's items using the list under <b>See items</b>.</div></div>
+    <div class="gobar"><button class="btn go big" id="goBtn">Open vendor tabs &amp; emails</button><div class="gomsg" id="goMsg">GoldenBrands, SF Naturals and Southern Wine fill their carts once you sign in. For other vendors, sign in and add the items using the list under <b>See items</b>.</div></div>
     <div class="vlist" id="vlist"></div>
   </section>
 
@@ -216,4 +217,4 @@ details.how summary{cursor:pointer;font-weight:700;font-size:13px}
   </details>
 </main>
 <div class="wrap" id="copyWrap" hidden><textarea id="copybox" readonly aria-label="Copied text"></textarea></div>
-<script src="../content/utils.js"></script><script src="../content/core/log.js"></script><script src="../content/core/dates.js"></script><script src="config.js"></script><script src="app.js"></script></body></html>
+<script src="../content/utils.js"></script><script src="../content/core/log.js"></script><script src="../content/core/dates.js"></script><script src="config.js"></script><script src="sipmarket.js"></script><script src="portals.js"></script><script src="app.js"></script></body></html>

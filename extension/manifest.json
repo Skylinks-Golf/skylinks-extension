@@ -13,7 +13,9 @@
     "https://api.perfectvenue.com/*",
     "https://348a3926020407.na.deputy.com/*",
     "https://dashboard.stripe.com/*",
-    "https://www.sipmarket.com/*"
+    "https://www.sipmarket.com/*",
+    "https://sfnaturals.pepr.app/*",
+    "https://shop.sgproof.com/*"
   ],
   "icons": {
     "16": "icons/icon16.png",
