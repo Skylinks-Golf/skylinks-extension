@@ -2,6 +2,9 @@
 
 Newest first. Bump `version` in `manifest.json` for any user-visible change and add a line here.
 
+## 1.13
+- Pro Shop Orders: "Open vendor tabs & emails" now fills the carts for GoldenBrands (SipMarket), SF Naturals and Southern Wine after you sign in, using the approved case counts. It stops at the cart for you to review and submit. Items it can't match are listed for you to add yourself.
+
 ## 1.12
 - Tools are now plug-in modules (`modules/<id>/module.js`). The popup builds itself from them, so new features no longer touch `popup.js`. Existing buttons are unchanged. Lightspeed Golf buttons now match only `www.chronogolf.ca/.com`, the hosts the extension already has permission for. Added the SipMarket host permission (`https://www.sipmarket.com/*`, approved by Ian) for the Pro Shop Orders cart fill. The repo check now requires every manifest host to belong to a module, so removing a module shows which permission to drop.
 
