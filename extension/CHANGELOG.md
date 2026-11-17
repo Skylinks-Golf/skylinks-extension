@@ -2,6 +2,9 @@
 
 Newest first. Bump `version` in `manifest.json` for any user-visible change and add a line here.
 
+## 1.12
+- Pro Shop Orders: "Open vendor tabs & emails" now fills the carts for GoldenBrands (SipMarket), SF Naturals and Southern Wine after you sign in, using the approved case counts. It stops at the cart for you to review and submit. Items it can't match are listed for you to add yourself.
+
 ## 1.11
 - Export Tee Sheet: the default date is now today in Pacific time. It used UTC, so after about 4 PM Pacific it defaulted to tomorrow.
 
