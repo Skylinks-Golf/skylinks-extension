@@ -3,6 +3,7 @@
 // because CI logs on this public repo are public too.
 const { execFileSync, spawnSync } = require('child_process');
 const fs = require('fs');
+const vm = require('vm');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
@@ -26,14 +27,58 @@ for (const f of tracked.filter(f => f.endsWith('.js') && !isVendored(f))) {
 const manifest = JSON.parse(read('extension/manifest.json'));
 if (manifest.content_scripts) fail('extension/manifest.json: content scripts are registered in popup.js, not the manifest');
 const refs = new Set([manifest.action && manifest.action.default_popup, ...Object.values((manifest.action && manifest.action.default_icon) || {}), ...Object.values(manifest.icons || {})].filter(Boolean));
-const popup = read('extension/popup.js');
-for (const m of popup.matchAll(/'(content\/[^']+\.js)'/g)) refs.add(m[1]);
-for (const m of popup.matchAll(/page: '([^'#]+)/g)) refs.add(m[1]);
-for (const r of refs) if (!exists(`extension/${r}`)) fail(`extension/${r}: referenced by popup.js or manifest.json but missing`);
+for (const r of refs) if (!exists(`extension/${r}`)) fail(`extension/${r}: referenced by the manifest but missing`);
 for (const f of tracked.filter(f => f.startsWith('extension/') && f.endsWith('.html'))) {
   for (const m of read(f).matchAll(/<script[^>]+src="([^"]+)"/g)) {
     if (/^https?:/.test(m[1])) { fail(`${f}: loads a remote script, MV3 extension pages can't`); continue; }
     if (!exists(path.posix.join(path.posix.dirname(f), m[1]))) fail(`${f}: script ${m[1]} is missing`);
+  }
+}
+
+// Module registry: modules/index.js lists the enabled modules, each modules/<id>/module.js
+// describes one. Load them the way the popup does and validate the descriptors.
+{
+  const sandbox = {};
+  sandbox.window = sandbox; // popup.html loads these as <script>s where window is the global
+  vm.createContext(sandbox);
+  const run = rel => { try { vm.runInContext(read(rel), sandbox, { filename: rel }); return true; } catch (e) { fail(`${rel}: could not load (${e.message})`); return false; } };
+  if (run('extension/modules/registry.js') && run('extension/modules/index.js')) {
+    const Mods = sandbox.SkylinksModules;
+    const hostPerms = (manifest.host_permissions || []).map(p => (p.match(/^https:\/\/([^/]+)\//) || [])[1]).filter(Boolean);
+    const covered = h => hostPerms.some(p => p === h || (p.startsWith('*.') && (h === p.slice(2) || h.endsWith(p.slice(1)))));
+    for (const f of Mods.coreFiles) if (!exists(`extension/${f}`)) fail(`extension/${f}: listed in modules/registry.js coreFiles but missing`);
+    const seen = new Set();
+    for (const id of Mods.enabled) {
+      const rel = `extension/modules/${id}/module.js`;
+      if (seen.has(id)) fail(`modules/index.js: "${id}" is listed twice`);
+      seen.add(id);
+      if (!exists(rel)) { fail(`${rel}: listed in modules/index.js but missing`); continue; }
+      const before = Mods.list.length;
+      if (!run(rel)) continue;
+      const added = Mods.list.slice(before);
+      if (added.length !== 1) { fail(`${rel}: must call SkylinksModules.register exactly once`); continue; }
+      const m = added[0];
+      if (m.id !== id) fail(`${rel}: id "${m.id}" must match the folder name "${id}"`);
+      if (!/^[a-z0-9-]+$/.test(id)) fail(`${rel}: id must be lowercase letters, digits and dashes`);
+      if (!m.name) fail(`${rel}: needs a name`);
+      if (!m.owner) fail(`${rel}: needs an owner`);
+      if ((m.tools || []).length && !(m.hosts || []).length) fail(`${rel}: has tools but no hosts`);
+      if (!(m.tools || []).length && !(m.pages || []).length) fail(`${rel}: needs tools or pages`);
+      for (const h of m.hosts || []) if (!covered(h)) fail(`${rel}: host ${h} has no https://${h}/* entry in manifest.json host_permissions`);
+      for (const t of m.tools || []) {
+        if (!t.label) fail(`${rel}: a tool has no label`);
+        if (!Mods.colors.includes(t.color)) fail(`${rel}: tool "${t.label}" color must be one of ${Mods.colors.join(', ')}`);
+        if (!(t.files || []).length) fail(`${rel}: tool "${t.label}" has no files`);
+        for (const f of t.files || []) if (!exists(`extension/${f}`)) fail(`extension/${f}: used by tool "${t.label}" in ${rel} but missing`);
+      }
+      for (const p of m.pages || []) {
+        if (!p.label) fail(`${rel}: a page has no label`);
+        if (!exists(`extension/${String(p.page).split('#')[0]}`)) fail(`extension/${p.page}: used by page "${p.label}" in ${rel} but missing`);
+      }
+    }
+    // A module folder that isn't listed would silently never load.
+    const dirs = fs.readdirSync(path.join(ROOT, 'extension/modules'), { withFileTypes: true }).filter(d => d.isDirectory() && !d.name.startsWith('_'));
+    for (const d of dirs) if (!Mods.enabled.includes(d.name)) fail(`extension/modules/${d.name}: folder is not listed in modules/index.js (rename it with a leading _ if it is a draft)`);
   }
 }
 

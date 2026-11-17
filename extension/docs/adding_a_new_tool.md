@@ -1,6 +1,6 @@
 # Adding a New Tool
 
-This walkthrough shows how to add a new integration to the extension. A tool that needs its own full page instead of a modal goes in its own folder and is listed in `PAGES` in `popup.js` (see `orders/`).
+This walkthrough shows how to add a new integration to the extension. A tool that needs its own full page instead of a modal uses the `pages` field of its module (see `modules/orders/` and `orders/`).
 
 ## 1. Create the content script
 
@@ -70,28 +70,42 @@ Create `content/<platform>.js`. Use this boilerplate:
 })();
 ```
 
-## 2. Register in `popup.js`
+## 2. Describe it as a module
 
-Add one entry to the `TOOLS` array:
+Every tool belongs to a **module**: a folder under `modules/<id>/` with a `module.js` descriptor. The popup is built from these descriptors, so you never edit `popup.js`.
+
+1. Copy `modules/_template/` to `modules/<id>/` (lowercase letters, digits and dashes).
+2. Fill in `module.js`:
 
 ```js
-{
-  match: url => url.includes('app.myplatform.com'),
-  label: 'My Report',
-  color: 'btn-blue',        // existing classes: btn-blue btn-green btn-purple btn-orange btn-teal
-  files: ['content/myplatform.js'],
-},
+SkylinksModules.register({
+  id: 'myplatform',               // same as the folder name
+  name: 'My Platform',            // shown in the popup's "navigate to..." message
+  owner: 'LC',                    // who to ask about this module
+  hosts: ['app.myplatform.com'],  // subdomains match too
+  tools: [
+    { label: 'My Report', color: 'btn-blue', files: ['modules/myplatform/report.js'] },
+  ],
+  // pages: [{ label: 'My Page', page: 'modules/myplatform/app.html' }],  // optional full pages, shown on every site
+});
 ```
 
-`CORE_FILES` is already included — you don't need to add anything else.
+3. Put the tool's content script (step 1) in the same folder, e.g. `modules/myplatform/report.js`. Existing tools still live in `content/`; that's fine, point `files` at wherever the file is.
+4. Add the id to the list in `modules/index.js` (one line). A folder that isn't listed never loads, and the repo check flags it. Prefix a draft folder with `_` to keep it out of the check.
+
+The shared `content/core/` files are injected before your files automatically. Chart.js is at `content/vendor/chart.umd.min.js` if you need it; list it first in `files`.
+
+A module with `pages` and no `tools` is an extension page module (see `modules/orders/`). Its buttons show on every site under the module's name.
 
 ## 3. Update `manifest.json`
 
-Add the platform's hostname to `host_permissions`:
+Add each host to `host_permissions`:
 
 ```json
 "https://app.myplatform.com/*"
 ```
+
+`node scripts/check-repo.js` fails if a module host has no matching entry, if a listed file is missing, if an id is duplicated, or if a color isn't one the popup styles.
 
 ## 4. Finish up
 
