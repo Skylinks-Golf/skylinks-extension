@@ -145,7 +145,7 @@ if (process.env.GITHUB_BASE_REF && baseName !== 'main') {
   fail(`This pull request targets "${baseName}". Every pull request must target main (see PROTOCOLS.md section 1).`);
 }
 if (headName !== 'HEAD' && headName !== 'main' && !/^[a-z0-9-]+\/[A-Za-z0-9._-]+$/.test(headName) && !/^dev-[a-z0-9-]+$/.test(headName)) {
-  fail(`Branch "${headName}" should be named <initials>/<topic> or dev-<initials>.`);
+  fail(`Branch "${headName}" should be named <name>/<topic> or dev-<name>.`);
 }
 
 const base = process.env.CHECK_BASE || `origin/${baseName === 'main' ? 'main' : baseName}`;

@@ -97,7 +97,7 @@ Four skills under `.claude/skills/` wrap this tool for common workflows:
 
 ## Shared artifacts (`artifacts/`)
 
-This repo also holds the team's shared claude.ai Artifacts, one folder per artifact at `artifacts/<slug>/`, each with `index.html` and `README.md`. These pages are not loaded by the extension and are not injected by `popup.js`. Before building or updating an artifact, read `artifacts/README.md`. Its rules: the repo file is the source and the Artifact is published from that file; work on a `<initials>/<slug>-<change>` branch and open a PR; never commit secrets, card data, payroll or customer PII.
+This repo also holds the team's shared claude.ai Artifacts, one folder per artifact at `artifacts/<slug>/`, each with `index.html` and `README.md`. These pages are not loaded by the extension and are not injected by `popup.js`. Before building or updating an artifact, read `artifacts/README.md`. Its rules: the repo file is the source and the Artifact is published from that file; work on a `<name>/<slug>-<change>` branch and open a PR; never commit secrets, card data, payroll or customer PII.
 
 ## For AI agents working here
 
