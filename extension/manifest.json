@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Skylinks Tools",
-  "version": "1.11",
+  "version": "1.12",
   "description": "Tool Modules for Skylinks",
   "permissions": ["activeTab", "scripting", "tabs", "clipboardWrite", "storage"],
   "host_permissions": [
@@ -12,7 +12,8 @@
     "https://app.perfectvenue.com/*",
     "https://api.perfectvenue.com/*",
     "https://348a3926020407.na.deputy.com/*",
-    "https://dashboard.stripe.com/*"
+    "https://dashboard.stripe.com/*",
+    "https://www.sipmarket.com/*"
   ],
   "icons": {
     "16": "icons/icon16.png",

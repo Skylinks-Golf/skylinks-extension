@@ -4,7 +4,7 @@ Agent-facing entry point for this repo. Read this first.
 
 ## This repo is the home for Skylinks browser tools and shared Artifacts
 
-- **Chrome extension** lives in `extension/`. This is the **only** Skylinks Chrome extension. Add new browser tools here (as a per-site content script plus a `popup.js` entry); do not start or maintain a separate extension elsewhere.
+- **Chrome extension** lives in `extension/`. This is the **only** Skylinks Chrome extension. Add new browser tools here as a **module** (`extension/modules/<id>/`, see below); do not start or maintain a separate extension elsewhere.
 - **Shared claude.ai Artifacts** live in `artifacts/`. See `artifacts/README.md`.
 - **Read [PROTOCOLS.md](PROTOCOLS.md) before any change.** It covers git workflow (branch + PR, never push to `main`, destructive actions need typed approval), data rules (public repo: no secrets, card data, payroll or PII, synthetic samples only), live-system and ordering approvals, and the pre-done checklist.
 
@@ -26,7 +26,12 @@ Skylinks Tools is a Chrome MV3 browser extension used by Skylinks Golf pro-shop 
 
 ```
 manifest.json           # MV3 manifest: permissions, host_permissions, popup action
-popup.html / popup.js   # Toolbar popup — detects the active tab's site and lists matching tool buttons
+popup.html / popup.js   # Toolbar popup — builds itself from the module registry; matches the active tab to modules and lists their buttons
+modules/
+  registry.js           # SkylinksModules: shared coreFiles list, button colors, register()/matches()
+  index.js              # The enabled module ids, in popup order. Adding a module = one line here
+  <id>/module.js        # One descriptor per module: id, name, owner, hosts, tools, pages
+  _template/            # Copy this to start a module (leading _ = not loaded, not checked)
 content/
   utils.js              # Small shared helpers (escHtml, escCsv, makeLogger) — window.SkylinksUtils
   core/
@@ -57,10 +62,10 @@ docs/history/             # Old specs, plans and reviews (project history, not c
 
 ## Key entry points
 
-- `manifest.json` — MV3 manifest; `host_permissions` lists every vendor domain this extension is allowed to run on. Adding a new vendor starts here.
-- `popup.js` (`CORE_FILES` and `TOOLS`) — the routing table. `TOOLS` matches the active tab's URL to a vendor and injects `CORE_FILES` + that tool's file(s) via `chrome.scripting.executeScript`. There is no manifest-declared `content_scripts` block — everything is injected on click.
+- `manifest.json` — MV3 manifest; `host_permissions` lists every vendor domain this extension is allowed to run on. Module builders add the hosts and permissions their module needs, and list them under `pending` in `scripts/approved-permissions.json` (module and reason). Ian approves at the merge to `main`: the repo check fails on a pull request until he clears `pending`, which only he does.
+- `modules/` — the module registry, and the one place tools are wired in. Each `modules/<id>/module.js` declares a module's hosts, tool buttons and pages; `modules/index.js` lists which load. `popup.js` renders from it and injects `SkylinksModules.coreFiles` + the tool's `files` via `chrome.scripting.executeScript`. There is no manifest-declared `content_scripts` block — everything is injected on click. `popup.js` itself should not need editing to add a tool.
 - `content/utils.js` and `content/core/*.js` — the shared `window.SkylinksUtils` namespace every content script depends on.
-- `docs/adding_a_new_tool.md` — the canonical, up-to-date walkthrough for wiring in a new vendor (content script boilerplate, `popup.js` registration, `manifest.json` host permission). Follow it exactly rather than improvising a new pattern.
+- `docs/adding_a_new_tool.md` — the canonical, up-to-date walkthrough for adding a module (content script boilerplate, `module.js` descriptor, `manifest.json` host permission). Follow it exactly rather than improvising a new pattern.
 
 ## Development
 
@@ -75,8 +80,9 @@ There is no build step and no test framework for this app.
 - **Timezone handling: always use `Intl`, never `getTimezoneOffset()`.** The established convention lives in `content/core/dates.js` — see `pacificMidnightUTC` (`content/core/dates.js:37`) and `pacificHour` (`content/core/dates.js:74`), both of which use `Intl.DateTimeFormat` with `timeZone: 'America/Los_Angeles'` to get the correct Pacific offset year-round, including on DST transition days. Do not reintroduce `Date.prototype.getTimezoneOffset()` — it reflects the *browser's* local timezone, not Pacific, and breaks for any staff member not physically on Pacific time.
 - **Log through `makeLogger`, never with bare `console.log`.** `makeLogger(prefix)` (in `content/utils.js`) writes to the console and to the stored diagnostic log (`content/core/log.js`) that staff copy from the popup's Diagnostics section. Log what happened (step, row numbers, counts, status codes), never data: no customer or employee names, records, emails, phone numbers, birthdates, card data or tokens, and no raw API responses. `log.js` redacts as a safety net, but don't rely on it. Use `log.error('what failed', err)` in catch blocks so failures land in the log. New extension pages load `content/utils.js` and `content/core/log.js` first.
 - **Per-site isolation, shared core.** Each vendor gets its own `content/<vendor>.js` file; nothing vendor-specific belongs in `content/core/`. Shared behavior (modals, CSV, dates, API calls) goes in `content/core/*.js` and is consumed via `window.SkylinksUtils`, never re-implemented per tool.
-- **Extension pages are the exception to the content-script pattern.** A tool that needs its own full page (currently only `orders/`) lives in its own folder, is listed in `PAGES` in `popup.js`, and is opened with `chrome.tabs.create(chrome.runtime.getURL(...))`. Use this only when a modal over the vendor site isn't enough.
-- **No manifest-declared content scripts.** Scripts are injected imperatively from `popup.js` (`CORE_FILES` + the matched tool's `files`), not via `manifest.json`'s `content_scripts`. If a new file needs to run, it must be added to `popup.js`, not just to the `content/` folder.
+- **Extension pages are the exception to the content-script pattern.** A tool that needs its own full page (currently only `orders/`) lives in its own folder, is listed in its module's `pages`, and is opened with `chrome.tabs.create(chrome.runtime.getURL(...))`. Use this only when a modal over the vendor site isn't enough.
+- **No manifest-declared content scripts.** Scripts are injected imperatively by the popup (`coreFiles` + the matched tool's `files`), not via `manifest.json`'s `content_scripts`. If a new file needs to run, it must be in a module's `tools[].files`, not just in a folder.
+- **New features are modules.** One folder per module under `modules/`, one descriptor, one line in `modules/index.js`, host permissions in the manifest. `node scripts/check-repo.js` validates all of it. Existing tools still live under `content/`; don't move them without asking Ian.
 - **`docs/adding_a_new_tool.md` is the source of truth** for the modal/API-client/CSV/report pipeline pattern (`createModal`, `apiClient`, `runReport`) — follow its boilerplate rather than hand-rolling a new tool's structure.
 
 ## Token-efficient exploration
