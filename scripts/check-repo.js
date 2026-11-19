@@ -3,6 +3,7 @@
 // because CI logs on this public repo are public too.
 const { execFileSync, spawnSync } = require('child_process');
 const fs = require('fs');
+const vm = require('vm');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
@@ -11,7 +12,8 @@ const fail = msg => problems.push(msg);
 const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 });
 const read = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const exists = rel => fs.existsSync(path.join(ROOT, rel));
-const tracked = git('ls-files').split('\n').filter(Boolean);
+// Skip files deleted in the working tree but not committed yet, so removing a module doesn't crash the check.
+const tracked = git('ls-files').split('\n').filter(Boolean).filter(f => fs.existsSync(path.join(ROOT, f)));
 const isVendored = f => f.startsWith('extension/content/vendor/');
 
 // ---- Whole-repo checks ----
@@ -24,16 +26,95 @@ for (const f of tracked.filter(f => f.endsWith('.js') && !isVendored(f))) {
 
 // Every file the extension references exists.
 const manifest = JSON.parse(read('extension/manifest.json'));
+// Permissions ledger (scripts/approved-permissions.json). Builders may add what their module needs
+// under "pending" (with a module and a reason) and keep working. Ian approves at the merge to main:
+// a pull request fails while anything is pending, and he clears it by moving the entries into the
+// approved lists. Anything in the manifest that is in neither list fails everywhere.
+{
+  const ledger = JSON.parse(read('scripts/approved-permissions.json'));
+  const pending = ledger.pending || [];
+  const KEYS = ['permissions', 'host_permissions', 'optional_permissions', 'optional_host_permissions'];
+  for (const e of pending) {
+    if (!KEYS.includes(e.type) || !e.value || !e.module || !e.reason) fail(`scripts/approved-permissions.json: a pending entry needs type (${KEYS.join(' | ')}), value, module and reason`);
+  }
+  const isPending = (key, p) => pending.some(e => e.type === key && e.value === p);
+  for (const key of KEYS) {
+    for (const p of manifest[key] || []) {
+      if (!(ledger[key] || []).includes(p) && !isPending(key, p)) fail(`extension/manifest.json: ${key} "${p}" is not in scripts/approved-permissions.json. Add it under "pending" with your module and the reason; Ian approves it when the work merges to main.`);
+    }
+  }
+  for (const e of pending) {
+    if (!(manifest[e.type] || []).includes(e.value)) fail(`scripts/approved-permissions.json: pending "${e.value}" is not in manifest.json any more. Remove the pending entry.`);
+  }
+  if (pending.length) {
+    const list = pending.map(e => `${e.value} (${e.module}: ${e.reason})`).join('; ');
+    if (process.env.GITHUB_BASE_REF) fail(`${pending.length} permission(s) await Ian's approval before this can merge to main: ${list}. Ian clears them by moving each into the approved lists in scripts/approved-permissions.json.`);
+    else console.log(`Note: ${pending.length} permission(s) will need Ian's approval at the merge to main: ${list}`);
+  }
+}
 if (manifest.content_scripts) fail('extension/manifest.json: content scripts are registered in popup.js, not the manifest');
 const refs = new Set([manifest.action && manifest.action.default_popup, ...Object.values((manifest.action && manifest.action.default_icon) || {}), ...Object.values(manifest.icons || {})].filter(Boolean));
-const popup = read('extension/popup.js');
-for (const m of popup.matchAll(/'(content\/[^']+\.js)'/g)) refs.add(m[1]);
-for (const m of popup.matchAll(/page: '([^'#]+)/g)) refs.add(m[1]);
-for (const r of refs) if (!exists(`extension/${r}`)) fail(`extension/${r}: referenced by popup.js or manifest.json but missing`);
+for (const r of refs) if (!exists(`extension/${r}`)) fail(`extension/${r}: referenced by the manifest but missing`);
 for (const f of tracked.filter(f => f.startsWith('extension/') && f.endsWith('.html'))) {
   for (const m of read(f).matchAll(/<script[^>]+src="([^"]+)"/g)) {
     if (/^https?:/.test(m[1])) { fail(`${f}: loads a remote script, MV3 extension pages can't`); continue; }
     if (!exists(path.posix.join(path.posix.dirname(f), m[1]))) fail(`${f}: script ${m[1]} is missing`);
+  }
+}
+
+// Module registry: modules/index.js lists the enabled modules, each modules/<id>/module.js
+// describes one. Load them the way the popup does and validate the descriptors.
+{
+  const sandbox = {};
+  sandbox.window = sandbox; // popup.html loads these as <script>s where window is the global
+  vm.createContext(sandbox);
+  const run = rel => { try { vm.runInContext(read(rel), sandbox, { filename: rel }); return true; } catch (e) { fail(`${rel}: could not load (${e.message})`); return false; } };
+  if (run('extension/modules/registry.js') && run('extension/modules/index.js')) {
+    const Mods = sandbox.SkylinksModules;
+    const hostPerms = (manifest.host_permissions || []).map(p => (p.match(/^https:\/\/([^/]+)\//) || [])[1]).filter(Boolean);
+    const covered = h => hostPerms.some(p => p === h || (p.startsWith('*.') && (h === p.slice(2) || h.endsWith(p.slice(1)))));
+    for (const f of Mods.coreFiles) if (!exists(`extension/${f}`)) fail(`extension/${f}: listed in modules/registry.js coreFiles but missing`);
+    const seen = new Set();
+    const claimed = new Set(); // every host some module says it uses
+    for (const id of Mods.enabled) {
+      const rel = `extension/modules/${id}/module.js`;
+      if (seen.has(id)) fail(`modules/index.js: "${id}" is listed twice`);
+      seen.add(id);
+      if (!exists(rel)) { fail(`${rel}: listed in modules/index.js but missing`); continue; }
+      const before = Mods.list.length;
+      if (!run(rel)) continue;
+      const added = Mods.list.slice(before);
+      if (added.length !== 1) { fail(`${rel}: must call SkylinksModules.register exactly once`); continue; }
+      const m = added[0];
+      if (m.id !== id) fail(`${rel}: id "${m.id}" must match the folder name "${id}"`);
+      if (!/^[a-z0-9-]+$/.test(id)) fail(`${rel}: id must be lowercase letters, digits and dashes`);
+      if (!m.name) fail(`${rel}: needs a name`);
+      if (!m.owner) fail(`${rel}: needs an owner`);
+      if ((m.tools || []).length && !(m.hosts || []).length) fail(`${rel}: has tools but no hosts`);
+      if (!(m.tools || []).length && !(m.pages || []).length) fail(`${rel}: needs tools or pages`);
+      for (const h of [...(m.hosts || []), ...(m.extraHosts || [])]) {
+        claimed.add(h);
+        if (!covered(h)) fail(`${rel}: host ${h} has no https://${h}/* entry in manifest.json host_permissions`);
+      }
+      for (const t of m.tools || []) {
+        if (!t.label) fail(`${rel}: a tool has no label`);
+        if (!Mods.colors.includes(t.color)) fail(`${rel}: tool "${t.label}" color must be one of ${Mods.colors.join(', ')}`);
+        if (!(t.files || []).length) fail(`${rel}: tool "${t.label}" has no files`);
+        for (const f of t.files || []) if (!exists(`extension/${f}`)) fail(`extension/${f}: used by tool "${t.label}" in ${rel} but missing`);
+      }
+      for (const p of m.pages || []) {
+        if (!p.label) fail(`${rel}: a page has no label`);
+        if (!exists(`extension/${String(p.page).split('#')[0]}`)) fail(`extension/${p.page}: used by page "${p.label}" in ${rel} but missing`);
+      }
+    }
+    // A manifest host that no module claims is a leftover (for example after a module was removed).
+    for (const p of hostPerms) {
+      const used = [...claimed].some(h => h === p || (p.startsWith('*.') && (h === p.slice(2) || h.endsWith(p.slice(1)))));
+      if (!used) fail(`extension/manifest.json: host_permissions has ${p} but no module lists it in hosts or extraHosts. Remove it from the manifest (and ask Ian to drop it from scripts/approved-permissions.json), or add it to the module that needs it.`);
+    }
+    // A module folder that isn't listed would silently never load.
+    const dirs = fs.readdirSync(path.join(ROOT, 'extension/modules'), { withFileTypes: true }).filter(d => d.isDirectory() && !d.name.startsWith('_'));
+    for (const d of dirs) if (!Mods.enabled.includes(d.name)) fail(`extension/modules/${d.name}: folder is not listed in modules/index.js (rename it with a leading _ if it is a draft)`);
   }
 }
 

@@ -1,0 +1,22 @@
+{
+  "_note": "Permissions in extension/manifest.json. 'permissions' and 'host_permissions' are approved by Ian. A module builder who needs a new host or permission adds it to the manifest and lists it under 'pending' with their module and a reason, then keeps building. The repo check passes on branch pushes but fails on a pull request to main until pending is empty. Ian approves by moving each entry into the approved lists above (or deleting it to refuse). Only Ian clears pending.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs",
+    "clipboardWrite",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://us.merchantos.com/*",
+    "https://www.chronogolf.ca/*",
+    "https://www.chronogolf.com/*",
+    "https://portal.getselectpi.com/*",
+    "https://app.perfectvenue.com/*",
+    "https://api.perfectvenue.com/*",
+    "https://348a3926020407.na.deputy.com/*",
+    "https://dashboard.stripe.com/*",
+    "https://www.sipmarket.com/*"
+  ],
+  "pending": []
+}

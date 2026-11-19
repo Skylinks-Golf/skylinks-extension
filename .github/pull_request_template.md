@@ -10,3 +10,4 @@
 - [ ] Logs say what happened (row numbers, counts), not names or contact details
 - [ ] `manifest.json` version bumped and `extension/CHANGELOG.md` updated (if user-visible)
 - [ ] `AGENTS.md` / docs updated (if structure or conventions changed)
+- [ ] Any new host or permission is in `manifest.json` and listed under `pending` in `scripts/approved-permissions.json` (Ian approves at merge)
