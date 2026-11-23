@@ -18,5 +18,36 @@
     "https://dashboard.stripe.com/*",
     "https://www.sipmarket.com/*"
   ],
-  "pending": []
+  "pending": [
+    {
+      "type": "host_permissions",
+      "value": "https://sfnaturals.pepr.app/*",
+      "module": "orders",
+      "reason": "SF Naturals portal cart fill"
+    },
+    {
+      "type": "host_permissions",
+      "value": "https://shop.sgproof.com/*",
+      "module": "orders",
+      "reason": "Southern Wine (Proof) portal cart fill"
+    },
+    {
+      "type": "host_permissions",
+      "value": "https://now.breakthrubev.com/*",
+      "module": "orders",
+      "reason": "Breakthru Bev portal cart fill"
+    },
+    {
+      "type": "host_permissions",
+      "value": "https://apps.vtinfo.com/*",
+      "module": "orders",
+      "reason": "Markstein (vtinfo) portal cart fill"
+    },
+    {
+      "type": "host_permissions",
+      "value": "https://shop.musclefoodsusa.com/*",
+      "module": "orders",
+      "reason": "Muscle Foods USA portal cart fill"
+    }
+  ]
 }

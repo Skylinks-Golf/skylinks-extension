@@ -3,7 +3,8 @@ SkylinksModules.register({
   id: 'orders',
   name: 'Pro Shop Orders',
   owner: 'Ian',
-  extraHosts: ['www.sipmarket.com'],  // vendor portal the order page fills carts on (approved by Ian, 2026-11-04)
+  // vendor portals the order page fills carts on (Notion Ordering Sources, approved by Ian 2026-11-16)
+  extraHosts: ['www.sipmarket.com', 'sfnaturals.pepr.app', 'shop.sgproof.com', 'now.breakthrubev.com', 'apps.vtinfo.com', 'shop.musclefoodsusa.com'],
   pages: [
     { label: "Last Week's Sales", page: 'orders/app.html#sales' },
     { label: 'Money (Profit & Leaks)', page: 'orders/app.html#money' },
