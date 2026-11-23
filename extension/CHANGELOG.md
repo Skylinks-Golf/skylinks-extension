@@ -3,6 +3,7 @@
 Newest first. Bump `version` in `manifest.json` for any user-visible change and add a line here.
 
 ## 1.13
+- Pro Shop Orders: a main worker now runs the order. The order page hands it the run; it opens every checked vendor tab and email at once, watches all vendors for sign-in together, then fills carts one vendor at a time with that tab in front. It keeps going if you close the order page, and reopening the page shows where each vendor stands.
 - Pro Shop Orders: "Open vendor tabs & emails" now fills the carts for GoldenBrands (SipMarket), SF Naturals, Southern Wine, Breakthru Bev, Markstein and Muscle Foods after you sign in, using the approved case counts. Vendors fill one at a time, each with its tab brought to the front, because Chrome slows background tabs. It stops at the cart for you to review and submit. Items it can't match are listed for you to add yourself.
 
 ## 1.12

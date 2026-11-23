@@ -3,6 +3,7 @@
   "name": "Skylinks Tools",
   "version": "1.13",
   "description": "Tool Modules for Skylinks",
+  "background": { "service_worker": "orders/worker.js" },
   "permissions": ["activeTab", "scripting", "tabs", "clipboardWrite", "storage"],
   "host_permissions": [
     "https://us.merchantos.com/*",

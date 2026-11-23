@@ -106,3 +106,20 @@ LC decides whether to keep or remove them.
 - **Git from the Cowork bridge** leaves `.git/*.lock` files when deletes aren't allowed; check for stale locks if git
   says "File exists".
 - Vendor rep business contacts in `orders/config.js` are approved (Ian, 2026-11-04). Don't add other contacts.
+
+## Update 2026-11-23: main worker and mini workers
+
+- `dev-lc` was rebased onto `main` after the module registry (#27). Backup of the old branch: `backup/dev-lc-2026-11-23`.
+  Portal hosts are declared in `modules/orders/module.js` `extraHosts` and listed as `pending` in
+  `scripts/approved-permissions.json` for Ian. The rebased branch still needs a force push (LC typed "approve").
+- New `extension/orders/worker.js`, the extension's service worker (`"background"` in the manifest; no new permission).
+  The order page's button now sends `{type:'orderRun:start', run}` to it and shows progress from
+  `chrome.storage.session` key `orderRun` (also when the page is reopened). The page no longer runs the fills.
+- Main worker: opens the non-automated vendor tabs and the Gmail compose windows at once, then starts one mini worker
+  per vendor in `PORTALS`. Each mini worker opens its list page and checks for sign-in every 10 s (up to 45 min), all
+  in parallel. Fills take turns in one lane with the vendor's tab in front (Chrome slows background tabs; that is what
+  stalled GoldenBrands), then the order page is brought back.
+- A 20 s heartbeat (`chrome.runtime.getPlatformInfo`) keeps the worker alive while vendors are in progress. If Chrome
+  restarts the worker mid-run, unfinished vendors are marked "press the button again"; re-running skips items already
+  in the cart.
+- Tested with a stubbed Chrome in Node (run flow, lane order, status text). Not yet tested in real Chrome.
