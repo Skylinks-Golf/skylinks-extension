@@ -5,8 +5,17 @@
    add approved items from the vendor's saved list / order guide to the cart, then stop.
    Never checkout, submit, "add whole list", type a login, or change account/payment/delivery settings. */
 
-// Shared: Lightspeed name -> lookup key (drops the type prefix and " - Single").
-function portalKey(n){return String(n).replace(/^(Beer|Seltzer|Cider|Malt|Hard Tea|Hard Kombucha|Wine Cocktail|Cocktail)\s*-\s*/i,'').replace(/\s*-\s*(Single|Serving)\b.*$/i,'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+// Shared: Lightspeed name -> lookup key. Lightspeed names start with one or more category words
+// ("Soda - Coke - 12oz", "Beer - Non-alcoholic - Samuel Adams - ..."); the maps below use the name without them.
+// Also decodes HTML entities ("Half &amp; Half") and drops " - Single…" and a trailing " - 12pk".
+const PORTAL_CATS=/^(beer|non-?alcoholic|seltzer|hard seltzer|cider|hard cider|malt|hard tea|hard kombucha|hard soda|wine cocktails?|wine|cocktail|shooter|soda|sportsdrink|sports drink|energy|energy drinks?|soft drinks?|drinks?|beverages?|water|sparkling|juice|tea|coffee|milk|protein|protein bar|bar|chips|candy|snacks?|jerky|ice cream|cookies)$/i;
+function portalKey(n){
+  let s=String(n).replace(/&amp;/g,'&').replace(/&#0?39;|&apos;/g,"'").replace(/&quot;/g,'"');
+  let parts=s.split(/\s+-\s+/);
+  while(parts.length>2&&PORTAL_CATS.test(parts[0].trim()))parts.shift();
+  s=parts.join(' - ').replace(/\s*-\s*(Single|Serving)\b.*$/i,'').replace(/\s*-\s*\d+\s?pk$/i,'');
+  return s.toLowerCase().replace(/[^a-z0-9]/g,'');
+}
 function portalMap(obj){const m={};for(const [k,v] of Object.entries(obj))m[portalKey(k)]=v;return n=>m[portalKey(n)]||null}
 
 /* ---------- SF Naturals (pepr) ---------- */
@@ -20,7 +29,7 @@ const SF_CODES={
  'Gatorade - Cool Blue - 28oz':'1129','Gatorade - Fruit Punch - 28oz':'1127','Gatorade - Orange - 28oz':'1124','Gatorade - Lemon Lime - 28oz':'1123','Gatorade - Glacier Freeze - 28oz':'1131',
  'Gatorade - Glacier Cherry - 28oz':'1128','Gatorade - Strawberry - 28oz':'1126','Gatorade - Zero - Cool Blue - 28oz':'1132','Gatorade - Zero - Orange - 28oz':'1137',
  'Gatorade - Zero - Fruit Punch - 28oz':'5318','Gatorade - Zero - Glacier Cherry - 28oz':'1134','Gatorade - Zero - Cool Blue - 20oz':'5817',
- 'Arizona - Mucho Mango - 22oz':'211','Arizona - Watermelon - 22oz':'210',
+ 'Arizona - Mucho Mango - 22oz':'211','Arizona - Watermelon - 22oz':'210','Arizona - Kiwi Strawberry - 22oz':'212','Arizona - Iced Tea - Raspberry - 22oz':'4550',
  'Liquid Death - Slice of Lime - 19.2oz':'6031','Liquid Death - Sparkling Water - 19.2oz':'5938',
  'Poppi - Raspberry Rose - 12oz':'3033','Poppi - Root Beer - 12oz':'4847','Olipop - Vintage Cola - 12oz':'2878','La Croix - Peach Pear - 12oz':'2008',
  'Pure Leaf - Lemon - 18.5oz':'3097','Pure Leaf - Unsweetened - 18.5oz':'3100','Pure Leaf - Green Tea - 18.5oz':'3096',

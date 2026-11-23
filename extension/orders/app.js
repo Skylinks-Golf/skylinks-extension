@@ -42,7 +42,7 @@ async function lsVendor(id,ranges){
   const out={};
   for(const [k,[s,e]] of Object.entries(ranges)){
     const rows=await all('/?name=reports.sales.listings.item&form_name=listing&shop_id=1&__sort=sold&__sort_dir=DESC&category_id=-1&vendor_id='+id+'&start_date='+s+'&end_date='+e,30)||[];
-    out[k]=rows.map(r=>[String(r.description||'').trim(),num(r.qoh),num(r.qout),num(r.total),num(r.cost),num(r.subtotal_w_discount)]).filter(r=>r[0]);
+    out[k]=rows.map(r=>[String(r.description||'').replace(/&amp;/g,'&').replace(/&#0?39;|&apos;/g,"'").replace(/&quot;/g,'"').trim(),num(r.qoh),num(r.qout),num(r.total),num(r.cost),num(r.subtotal_w_discount)]).filter(r=>r[0]);
   }
   return out;
 }
@@ -76,7 +76,7 @@ async function lsAssets(){
   const num=x=>parseFloat(String(x==null?'':x).replace(/[$,%]/g,''))||0;
   const all=async(u,max)=>{const out=[];let n=1;for(let p=1;p<=Math.min(n,max||200);p++){const h=await fetch(u+'&page='+p).then(r=>r.text());const rows=grab(h);if(!rows)return p===1?null:out;if(p===1)n=pages(h);out.push(...rows);if(!rows.length)break}return out};
   const rows=await all('/?name=reports.inventory.listings.assets&form_name=listing&shop_id=1&show_category=off&qty=on',120)||[];
-  return rows.map(r=>[String(r.description||'').trim(),num(r.quantity),num(r.cost)]);
+  return rows.map(r=>[String(r.description||'').replace(/&amp;/g,'&').replace(/&#0?39;|&apos;/g,"'").replace(/&quot;/g,'"').trim(),num(r.quantity),num(r.cost)]);
 }
 
 /* ---------- pull ---------- */

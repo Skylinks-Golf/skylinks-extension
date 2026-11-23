@@ -35,6 +35,7 @@ const SIPMARKET={
     'Monaco - Lime Crush - 12oz':'65259',
     'Monaco - Watermelon Crush - 12oz':'65252',
     'Non-Alcoholic - Lagunitas - IPA - 12oz':'65991',
+    'Samuel Adams - Hazy IPA - 12oz':'51393',
     'Pacifico - Clara - 12oz':'35350',
     'Pacifico - Lager - 24oz':'30491',
     'Sierra Nevada - Atomic Torpedo - Imperial IPA - 19.2oz':'54798',
@@ -57,7 +58,7 @@ const SIPMARKET={
     'White Claw - Ruby Grapefruit - 12oz':'31917',
     'White Claw - Watermelon - 19.2oz':'55842'
   },
-  key(n){return String(n).replace(/^(Beer|Seltzer|Cider|Malt|Hard Tea|Hard Kombucha|Wine Cocktail|Cocktail)\s*-\s*/i,'').replace(/\s*-\s*(Single|Serving)\b.*$/i,'').toLowerCase().replace(/[^a-z0-9]/g,'')},
+  key(n){return portalKey(n)},  // shared normalizer in portals.js (loaded after this file; called at run time)
   skuFor(n){if(!this._k){this._k={};for(const [k,v] of Object.entries(this.SKU))this._k[this.key(k)]=v}return this._k[this.key(n)]||null}
 };
 
