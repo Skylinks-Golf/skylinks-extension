@@ -5,9 +5,10 @@ description: Process the Skylinks PO Intake queue. Enter saved vendor invoices a
 
 # Skylinks PO queue worker
 
-Turns invoices saved on the **PO Intake** page into Lightspeed Retail purchase orders.
-Page source: `artifacts/po-intake/` (see its README for the data model).
-Artifact: https://claude.ai/artifact/QhJRWAtFKgCcLYMKz6jvhT
+Turns invoices saved on the **6 · Receive invoices** tab of the Pro Shop Order Run into Lightspeed Retail purchase orders.
+Page source: `artifacts/order-run/index.html` (see its README for the data model).
+Artifact: https://claude.ai/artifact/A46JNVDxUR84mEGpHv8Ujq
+(The older stand-alone PO Intake page, https://claude.ai/artifact/QhJRWAtFKgCcLYMKz6jvhT, uses `pos` and `lookup` instead. Use it only if someone saved an invoice there.)
 
 Run it only when a person asks. Work in their signed-in Chrome (Claude in Chrome) on `us.merchantos.com`.
 
@@ -24,10 +25,11 @@ Run it only when a person asks. Work in their signed-in Chrome (Claude in Chrome
 
 ## Where things are
 
-**Queue (artifact database)**, read and write with the `ArtifactData` tool, `url` = the artifact link above.
-- `pos/<id>`: one doc per invoice. Fields used here: `vendor, invoiceNumber, invoiceDate, vendorPo, lines[{vendorCode, description, cases, unitCost, lsItemId, lsItemName}], charges{shipping, crv, tax, other, discount, invoiceTotal}, calc{lightspeedTotal, diff, cases}, totalsMatch, allMatched, driveUrl, poNote, status, lightspeedPo, hold, log[{at, step}]`.
+**Queue (Order Run artifact database)**, read and write with the `ArtifactData` tool, `url` = the artifact link above.
+- `invoices/<receivedDate>_<vendor-slug>_<invoice-slug>`: one doc per invoice. Fields used here: `vendor, invoiceNumber, invoiceDate, vendorPo, lines[{vendorCode, description, cases, unitCost, lsItemId, lsItemName}], charges{shipping, crv, tax, other, discount, invoiceTotal}, calc{lightspeedTotal, diff, cases}, totalsMatch, allMatched, driveUrl, poNote, status, lightspeedPo, hold, log[{at, step}]`.
 - `status` flow: `ready` → `filed` → `entered` → `checked_in` → `broken_down`. `hold` = reason text.
 - Every write passes `if_version` from the doc you read. On a version conflict, re-read and redo; never overwrite someone's change.
+- `invoiceMatches/<vendor-slug>__<code-or-desc-slug>`: remembered line → item matches `{vendor, vendorCode, description, lsItemId, lsItemName}`.
 - Append to `log` (`{at: ISO time Pacific, step: "..."}`); don't rewrite it.
 
 **Lightspeed Retail R-Series**: account `305872`, shop `1`.
@@ -50,7 +52,7 @@ Run it only when a person asks. Work in their signed-in Chrome (Claude in Chrome
 ## Run
 
 ### 1. Read the queue
-List `pos`. Take docs with `status` `ready` or `filed` and no `hold`, oldest `receivedDate` first. Also list held docs in the report so they aren't forgotten.
+List `invoices`. Take docs with `status` `ready` or `filed` and no `hold`, oldest `receivedDate` first. Also list held docs in the report so they aren't forgotten.
 
 ### 2. Screen each doc (no Lightspeed writes)
 - Any line without `lsItemId`, or `allMatched` not true → set `hold` = "Missing Lightspeed items: <descriptions>". Skip.

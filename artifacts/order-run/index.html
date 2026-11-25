@@ -181,6 +181,69 @@ details.how summary{cursor:pointer;font-weight:700;font-size:13px}
 @media (max-width:640px){.vline{grid-template-columns:minmax(0,1fr) auto}.vline .acts{grid-column:1/-1;justify-content:flex-start}}
 </style>
 
+<style>
+/* 6 · Receive invoices (was the PO Intake page). Everything scoped to #p-receive. */
+#p-receive .rv-sub{display:flex;gap:0;border-bottom:1px solid var(--line);margin:0 0 18px}
+#p-receive .rv-sub button{font:600 12px var(--f-body);padding:8px 14px;background:transparent;color:var(--muted);border:0;border-bottom:3px solid transparent;cursor:pointer}
+#p-receive .rv-sub button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--gold)}
+#p-receive .rv-card{border:1px solid var(--line);padding:18px;margin-bottom:18px}
+#p-receive .rv-label{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.08em;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+#p-receive .rv-label:before{content:"";width:10px;height:10px;background:var(--gold);display:inline-block}
+#p-receive .rv-drop{border:2px dashed var(--line);padding:28px;text-align:center;background:var(--surface)}
+#p-receive .rv-drop.over{border-color:var(--gold)}
+#p-receive .rv-drop p{margin:6px 0;color:var(--muted)}
+#p-receive .rv-drop strong{font-size:16px}
+#p-receive .rv-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#p-receive .rv-thumbs{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+#p-receive .rv-thumb{position:relative;width:110px;height:140px;border:1px solid var(--line);overflow:hidden;background:#fff}
+#p-receive .rv-thumb img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+#p-receive .rv-thumb button{position:absolute;top:4px;right:4px;border:0;background:var(--fg);color:var(--bg);width:22px;height:22px;cursor:pointer;font-weight:800}
+#p-receive .rv-thumb span{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.75);color:#fff;font-size:10px;padding:2px 4px;font-weight:700}
+#p-receive .rv-status{margin-top:12px;font-weight:600;color:var(--muted);min-height:1.3em}
+#p-receive .rv-status.err{color:var(--bad)}
+#p-receive .rv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+#p-receive .rv-f label{display:block;font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:10px;color:var(--muted);margin-bottom:4px}
+#p-receive input:not([type=checkbox]),#p-receive textarea{width:100%;font:500 13px var(--f-body);color:var(--fg);background:var(--bg);border:1px solid var(--line);padding:7px 8px}
+#p-receive input:focus,#p-receive textarea:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+#p-receive input.num{text-align:right;font-family:var(--f-mono)}
+#p-receive .rv-lines table{min-width:900px}
+#p-receive .rv-lines td{vertical-align:top;padding:6px}
+#p-receive .rv-lines td input{padding:5px 6px}
+#p-receive tr.flag td{background:color-mix(in srgb,var(--gold) 14%,transparent)}
+#p-receive tr.flag td:first-child{box-shadow:inset 4px 0 0 var(--gold)}
+#p-receive .rv-match{font-size:11px;margin-top:3px;font-weight:700}
+#p-receive .rv-match.ok{color:var(--good)}#p-receive .rv-match.no{color:var(--warn)}#p-receive .rv-match.sug{color:var(--warn)}
+#p-receive .rv-check{display:grid;grid-template-columns:1fr auto;gap:4px 18px;max-width:440px}
+#p-receive .rv-check div:nth-child(even){text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+#p-receive .rv-check .tot{border-top:2px solid var(--fg);padding-top:6px;font-weight:800}
+#p-receive .rv-verdict{margin-top:12px;padding:12px 14px;font-weight:700}
+#p-receive .rv-verdict.ok{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
+#p-receive .rv-verdict.bad{background:color-mix(in srgb,var(--bad) 12%,transparent);color:var(--bad)}
+#p-receive .rv-q{display:flex;gap:14px;align-items:flex-start;border-bottom:1px solid var(--line);padding:12px 0}
+#p-receive .rv-q:last-child{border-bottom:0}
+#p-receive .rv-q .rv-main{flex:1;min-width:0}
+#p-receive .rv-q h4{margin:0 0 4px;font-size:15px;font-weight:800}
+#p-receive .rv-meta{color:var(--muted);font-size:12.5px}
+#p-receive .rv-steps{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+#p-receive .rv-chip{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 7px;background:var(--chip);color:var(--muted);border:1px solid var(--line)}
+#p-receive .rv-chip.done{background:var(--good);color:#fff;border-color:var(--good)}
+#p-receive .rv-chip.flag{background:var(--bad);color:#fff;border-color:var(--bad)}
+#p-receive .rv-empty{color:var(--muted);text-align:center;padding:24px}
+#p-receive .rv-small{font-size:12px;color:var(--muted)}
+#p-receive details.rv-sheet{margin-top:10px}
+#p-receive details.rv-sheet summary{cursor:pointer;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+#p-receive .rv-sheet table{margin-top:8px;font-size:12.5px}
+#p-receive .rv-sheet .k{color:var(--muted);font-weight:700;width:170px}
+#rv-pop{position:absolute;z-index:50;background:var(--bg);color:var(--fg);border:1.5px solid var(--fg);box-shadow:0 8px 24px rgba(0,0,0,.25);max-height:300px;overflow:auto;font-size:13px}
+#rv-pop div{padding:7px 10px;cursor:pointer;border-bottom:1px solid var(--line)}
+#rv-pop div:hover,#rv-pop div.on{background:var(--chip)}
+#rv-pop small{color:var(--muted);margin-left:6px}
+#rv-viewer{border:0;padding:0;max-width:96vw;max-height:94vh;background:var(--bg);color:var(--fg)}
+#rv-viewer img{display:block;max-width:92vw;max-height:84vh}
+#rv-viewer .bar{display:flex;justify-content:flex-end;padding:8px}
+@media (max-width:640px){#p-receive .rv-card{padding:14px}}
+</style>
+
 <header class="band"><div class="wrap">
   <div><div class="brand">Skylinks at Buchanan Fields · Pro Shop</div><h1>Weekly Order Run</h1></div>
   <div class="meta"><span>Sales week <b>Nov 16 – 22</b></span><span>Pulled <b>Mon, Nov 23, 2026</b> · Lightspeed, read only</span></div>
@@ -193,6 +256,7 @@ details.how summary{cursor:pointer;font-weight:700;font-size:13px}
     <button role="tab" id="tab-ideas" aria-selected="false" data-p="ideas">3 · Ideas</button>
     <button role="tab" id="tab-map" aria-selected="false" data-p="map">4 · Map</button>
     <button role="tab" id="tab-order" aria-selected="false" data-p="order">5 · This week's order</button>
+    <button role="tab" id="tab-receive" aria-selected="false" data-p="receive">6 · Receive invoices</button>
   </nav>
 
   <section class="panel" id="p-order">
@@ -252,6 +316,83 @@ details.how summary{cursor:pointer;font-weight:700;font-size:13px}
   <div class="tbl-wrap"><table class="mtbl"><thead><tr><th>Our item (Lightspeed)</th><th>Vendor product</th><th class="num">Case</th><th class="num">Avg/wk</th><th class="num">On hand</th><th class="num">Suggested par</th><th class="num">Your par</th><th class="num">Order</th></tr></thead><tbody id="mbody"></tbody></table></div>
   <p class="mnote" id="mfoot"></p>
 </section>
+
+  <section class="panel" id="p-receive" hidden>
+    <p class="howto">When a delivery comes in, add the invoice here. Claude reads it and suggests the Lightspeed item for each line; you check the numbers and matches, then <b>Save to queue</b>. The scan is filed in <b>Food &amp; Beverage › Purchase Orders</b> on Drive. Then tell Claude <b>"process the PO queue"</b>: it creates the PO in Lightspeed, stops for your OK before check-in, then breaks down the cases.</p>
+    <div class="rv-sub" role="tablist" aria-label="Receive invoices">
+      <button role="tab" id="rv-tab-new" aria-selected="true">New invoice</button>
+      <button role="tab" id="rv-tab-queue" aria-selected="false">Queue <span id="rv-qcount"></span></button>
+    </div>
+    <div id="rv-view-new">
+      <div class="rv-card">
+        <p class="rv-label">1 · Add the invoice</p>
+        <div class="rv-drop" id="rv-drop">
+          <strong>Drop photos or a scanned PDF here</strong>
+          <p>Front and back, every page. JPG or PNG from your phone, or PDF.</p>
+          <div class="rv-row" style="justify-content:center;margin-top:12px">
+            <button class="btn ghost" id="rv-pick">Upload files</button>
+            <button class="btn ghost" id="rv-cam">Scan with camera</button>
+          </div>
+          <input type="file" id="rv-fileIn" accept="image/*,application/pdf" multiple hidden>
+          <input type="file" id="rv-camIn" accept="image/*" capture="environment" hidden>
+        </div>
+        <div class="rv-thumbs" id="rv-thumbs"></div>
+        <div class="rv-row" style="margin-top:14px">
+          <button class="btn go" id="rv-read" disabled>Read invoice</button>
+          <button class="btn ghost" id="rv-clear" disabled>Start over</button>
+        </div>
+        <div class="rv-status" id="rv-status"></div>
+      </div>
+      <div id="rv-review" hidden>
+        <div class="rv-card">
+          <p class="rv-label">2 · Check the details</p>
+          <p class="callout">Compare every field against the paper and fix anything misread. Highlighted rows need a look.</p>
+          <div class="rv-grid">
+            <div class="rv-f"><label for="rv-h-vendor">Vendor</label><input id="rv-h-vendor"></div>
+            <div class="rv-f"><label for="rv-h-inv">Invoice # (Lightspeed reference #)</label><input id="rv-h-inv"></div>
+            <div class="rv-f"><label for="rv-h-date">Invoice date</label><input id="rv-h-date" type="date"></div>
+            <div class="rv-f"><label for="rv-h-rcv">Received date</label><input id="rv-h-rcv" type="date"></div>
+            <div class="rv-f"><label for="rv-h-po">Vendor PO / order #</label><input id="rv-h-po"></div>
+          </div>
+        </div>
+        <div class="rv-card">
+          <p class="rv-label">3 · Line items</p>
+          <div class="tbl-wrap rv-lines"><table>
+            <thead><tr><th style="width:110px">Vendor code</th><th>Description on invoice</th><th style="width:70px">Cases</th><th style="width:95px">Cost / case</th><th style="width:100px">Line total</th><th style="width:28%">Lightspeed item</th><th style="width:30px"></th></tr></thead>
+            <tbody id="rv-lines"></tbody>
+          </table></div>
+          <div class="rv-row" style="margin-top:10px"><button class="btn ghost" id="rv-addLine">Add line</button><button class="btn ghost" id="rv-aiMatch">Suggest matches</button><span class="rv-small" id="rv-matchMsg">Type a few words in the Lightspeed item box (like "case gatorade cherry") to search all items. Matches you save are remembered for that vendor.</span></div>
+        </div>
+        <div class="rv-card">
+          <p class="rv-label">4 · Charges and total check</p>
+          <div class="rv-grid">
+            <div class="rv-f"><label for="rv-c-ship">Delivery / shipping → Shipping Cost</label><input class="num" id="rv-c-ship" inputmode="decimal"></div>
+            <div class="rv-f"><label for="rv-c-crv">CRV → Other (+/-)</label><input class="num" id="rv-c-crv" inputmode="decimal"></div>
+            <div class="rv-f"><label for="rv-c-tax">Tax → Other (+/-)</label><input class="num" id="rv-c-tax" inputmode="decimal"></div>
+            <div class="rv-f"><label for="rv-c-other">Other charges, driver tip → Other (+/-)</label><input class="num" id="rv-c-other" inputmode="decimal"></div>
+            <div class="rv-f"><label for="rv-c-disc">Discount → Discount ($)</label><input class="num" id="rv-c-disc" inputmode="decimal"></div>
+            <div class="rv-f"><label for="rv-c-total">Invoice total (printed)</label><input class="num" id="rv-c-total" inputmode="decimal"></div>
+          </div>
+          <div class="rv-f" style="margin-top:12px"><label for="rv-h-notes">Notes for the PO (anything unusual)</label><textarea id="rv-h-notes" rows="2"></textarea></div>
+          <div style="margin-top:16px" class="rv-check" id="rv-check"></div>
+          <div id="rv-verdict"></div>
+        </div>
+        <div class="rv-card">
+          <p class="rv-label">5 · Send to the queue</p>
+          <p class="rv-small" style="margin-top:0">Files the scan as one PDF in Drive, saves your matches, and adds the invoice to the queue.</p>
+          <div class="rv-row"><button class="btn go" id="rv-save">Save to queue</button></div>
+          <div class="rv-status" id="rv-saveStatus"></div>
+        </div>
+      </div>
+    </div>
+    <div id="rv-view-queue" hidden>
+      <div class="rv-card">
+        <p class="rv-label">PO queue</p>
+        <div class="rv-row" style="margin-bottom:6px"><button class="btn ghost" id="rv-copyAsk">Copy "process the PO queue"</button><span class="rv-small" id="rv-copyMsg"></span></div>
+        <div id="rv-queue"><div class="rv-empty">Loading…</div></div>
+      </div>
+    </div>
+  </section>
 
   <details class="how"><summary>How the numbers work</summary>
     <ul class="recs" style="margin-top:10px">
@@ -571,5 +712,507 @@ render();hook();
  if(!db){mstate='off';note.textContent='Read only here: open this page in Claude while signed in to save matches and pars.';render();return}
  mdb=db;const t=setTimeout(()=>{note.textContent='Can\'t reach saved matches yet; showing the pre-matched list.'},10000);
  db.collection('map').onSnapshot(s=>{if(!s.metadata||!s.metadata.fromCache){clearTimeout(t);note.textContent=''}for(const k in SAVED)delete SAVED[k];s.docs.forEach(d=>{SAVED[d.id]=d.data()});if(mstate!=='ready'){mstate='ready'}render();hook()},()=>{clearTimeout(t);mstate='off';note.textContent='Couldn\'t load saved matches. Changes can\'t be saved right now.';render()});})();
+})();
+</script>
+<script>
+/* 6 · Receive invoices: scan a vendor invoice, match lines to Lightspeed items, file the scan to Drive, queue it for Claude.
+   Queue: db collection "invoices"; remembered matches: "invoiceMatches". Claude's skylinks-po-queue skill enters the POs. */
+(function(){
+const $ = id => document.getElementById("rv-" + id);
+const el = (tag, props = {}, ...kids) => { const n = document.createElement(tag); Object.assign(n, props); for (const k of kids) n.append(k); return n; };
+const money = v => (isFinite(v) && v != null ? (v < 0 ? "-$" : "$") + Math.abs(v).toFixed(2) : "-");
+const num = v => { const n = parseFloat(String(v ?? "").replace(/[$,\s]/g, "")); return isFinite(n) ? n : 0; };
+const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+const slug = s => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+const STEPS = [["ready","Saved"],["filed","Scan in Drive"],["entered","PO entered"],["checked_in","Checked in"],["broken_down","Cases broken down"]];
+const DRIVE_FOLDER = "1NNCrGqsga83LXKiIouW6QBR9JZdfBV5a"; // Food & Beverage > Purchase Orders
+const COL = "invoices", MATCHES = "invoiceMatches";
+let ITEMS = [], BYID = new Map(), BYLABEL = new Map();
+const itemLabel = it => `${it[1]} · #${it[0]}`;
+
+/* add the tab button next to the others */
+const nav = document.querySelector("nav.tabs");
+if (nav && !document.getElementById("tab-receive")) {
+  const b = el("button", { id: "tab-receive", textContent: "6 · Receive invoices" });
+  b.setAttribute("role", "tab"); b.setAttribute("aria-selected", "false"); b.dataset.p = "receive";
+  b.onclick = () => { if (typeof show === "function") show("receive"); };
+  nav.append(b);
+}
+
+fetch("items.json").then(r => r.json()).then(list => {
+  ITEMS = list; list.forEach(it => { BYID.set(it[0], it); BYLABEL.set(itemLabel(it), it); });
+  if ($("lines").children.length) { applyLookup(); recalc(); }
+}).catch(() => { $("matchMsg").textContent = "Lightspeed item list didn't load. Refresh the page."; });
+const STOP = new Set("the and of with w case cs ct pk pack single oz ml fl can cans btl btls bottle bottles x lb ea".split(" "));
+const toks = s => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").split(" ").filter(t => t.length > 1 && !STOP.has(t) && !/^\d+$/.test(t));
+function candidates(desc, n = 12) {
+  const q = toks(desc); if (!q.length) return [];
+  return ITEMS.map(it => { const t = new Set(toks(it[1])); let sc = 0; q.forEach(w => { if (t.has(w)) sc += 2; else if ([...t].some(x => x.startsWith(w) || w.startsWith(x))) sc += 1; }); if (it[2]) sc += 0.5; return [sc, it]; })
+    .filter(x => x[0] > 1).sort((a, b) => b[0] - a[0]).slice(0, n).map(x => x[1]);
+}
+
+/* PDF libraries load only when needed */
+const libs = {};
+const loadLib = src => libs[src] ||= new Promise((res, rej) => { const s = el("script", { src }); s.onload = res; s.onerror = () => { delete libs[src]; rej(new Error("A library didn't load. Check your connection and try again.")); }; document.head.append(s); });
+const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", PDFJS_W = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js", JSPDF = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+
+let pages = [];   // {blob, url, name}
+let lookup = {};  // key -> {lsItemId, lsItemName}
+let db = null, assets = null, sample = null, mcp = null;
+
+/* ---------- capabilities ---------- */
+(async () => {
+  try { sample = await claude.use("sample"); } catch (e) {}
+  try { assets = await claude.use("assets"); } catch (e) {}
+  try { db = await claude.use("db"); } catch (e) {}
+  try { mcp = await claude.use("mcp"); } catch (e) {}
+  if (!sample) setStatus("Reading invoices needs Claude access on this page. Open it signed in to claude.ai.", true);
+  renderThumbs();
+  if (db) { loadLookup(); watchQueue(); } else { $("queue").replaceChildren(el("div", { className: "rv-empty", textContent: "Queue unavailable: open this page signed in to claude.ai." })); }
+})();
+
+/* ---------- sub-tabs ---------- */
+function sub(which) {
+  $("tab-new").setAttribute("aria-selected", which === "new");
+  $("tab-queue").setAttribute("aria-selected", which === "queue");
+  $("view-new").hidden = which !== "new";
+  $("view-queue").hidden = which !== "queue";
+}
+$("tab-new").onclick = () => sub("new");
+$("tab-queue").onclick = () => sub("queue");
+const goQueue = () => { if (typeof show === "function") show("receive"); sub("queue"); };
+
+/* ---------- intake ---------- */
+function setStatus(t, err) { $("status").textContent = t; $("status").classList.toggle("err", !!err); }
+$("pick").onclick = () => $("fileIn").click();
+$("cam").onclick = () => $("camIn").click();
+$("fileIn").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
+$("camIn").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
+const drop = $("drop");
+["dragenter","dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave","drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => addFiles(e.dataTransfer.files));
+document.addEventListener("paste", e => {
+  if (document.getElementById("p-receive").hidden || $("view-new").hidden) return;
+  const f = [...(e.clipboardData?.files || [])]; if (f.length) addFiles(f);
+});
+
+async function downscale(blob, max = 2000) {
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    return await new Promise(r => c.toBlob(r, "image/jpeg", 0.85));
+  } finally { URL.revokeObjectURL(url); }
+}
+async function pdfToImages(file) {
+  await loadLib(PDFJS); await loadLib(PDFJS_W);
+  if (!window.pdfjsLib) throw new Error("PDF reader didn't load");
+  const doc = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const out = [];
+  for (let p = 1; p <= Math.min(doc.numPages, 8); p++) {
+    const page = await doc.getPage(p);
+    const vp0 = page.getViewport({ scale: 1 }); const scale = Math.min(2.5, 2000 / Math.max(vp0.width, vp0.height));
+    const vp = page.getViewport({ scale });
+    const c = document.createElement("canvas"); c.width = vp.width; c.height = vp.height;
+    await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+    out.push({ blob: await new Promise(r => c.toBlob(r, "image/jpeg", 0.85)), name: `${file.name} p${p}` });
+  }
+  return out;
+}
+async function addFiles(list) {
+  const files = [...list];
+  if (!files.length) return;
+  setStatus("Preparing pages…");
+  try {
+    for (const f of files) {
+      if (f.type === "application/pdf" || /\.pdf$/i.test(f.name)) {
+        for (const p of await pdfToImages(f)) pages.push({ ...p, url: URL.createObjectURL(p.blob) });
+      } else if (f.type.startsWith("image/") || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name)) {
+        let b; try { b = await downscale(f); } catch { throw new Error(`Couldn't open ${f.name}. If it's HEIC, export it as JPG or take a screenshot of it.`); }
+        pages.push({ blob: b, name: f.name, url: URL.createObjectURL(b) });
+      }
+    }
+    setStatus(pages.length ? `${pages.length} page${pages.length > 1 ? "s" : ""} ready. Add more, or press Read invoice.` : "");
+  } catch (e) { setStatus(e.message, true); }
+  renderThumbs();
+}
+function renderThumbs() {
+  $("thumbs").replaceChildren(...pages.map((p, i) => {
+    const img = el("img", { src: p.url, alt: `Page ${i + 1}` }); img.onclick = () => openViewer(p.url);
+    const x = el("button", { textContent: "×", title: "Remove page" }); x.onclick = () => { URL.revokeObjectURL(p.url); pages.splice(i, 1); renderThumbs(); };
+    return el("div", { className: "rv-thumb" }, img, x, el("span", { textContent: `Page ${i + 1}` }));
+  }));
+  $("read").disabled = !pages.length || !sample; $("clear").disabled = !pages.length;
+}
+const viewer = el("dialog", { id: "rv-viewer" });
+const viewerImg = el("img", { alt: "Invoice page" });
+const closeV = el("button", { className: "btn ghost", textContent: "Close" }); closeV.onclick = () => viewer.close();
+viewer.append(el("div", { className: "bar" }, closeV), viewerImg); document.body.append(viewer);
+function openViewer(url) { viewerImg.src = url; viewer.showModal(); }
+$("clear").onclick = () => { editing = null; pages.forEach(p => URL.revokeObjectURL(p.url)); pages = []; renderThumbs(); $("review").hidden = true; setStatus(""); $("saveStatus").textContent = ""; };
+
+/* ---------- read with Claude ---------- */
+const PROMPT = `You are reading a vendor invoice / purchase order for Skylinks Golf (a golf venue pro shop in Concord, CA). The images are every page of ONE invoice (front and back), in order.
+Extract exactly what is printed. Never guess a number: if a value is not printed or not legible, use null and say so in "warnings".
+Return ONLY a JSON object, no prose, in this shape:
+{
+ "vendor": string,                 // company name as printed (e.g. "SF Naturals")
+ "invoice_number": string|null,
+ "invoice_date": "YYYY-MM-DD"|null,
+ "vendor_po_number": string|null,   // their PO / order # if printed
+ "lines": [ {
+   "vendor_code": string|null,      // item/product code or SKU column
+   "description": string,           // as printed, include size and pack (e.g. "12/12OZ")
+   "cases": number,                 // quantity shipped/delivered (not ordered, if both are shown), in the unit the price is per (usually cases)
+   "unit_cost": number|null,        // price per case as charged, after any per-line discount
+   "line_total": number|null,       // extended amount as printed
+   "line_crv": number|null,         // CRV/deposit on this line if shown separately
+   "note": string|null              // e.g. "out of stock", "credit", "free goods"
+ } ],
+ "charges": {
+   "crv": number|null,              // total CRV / bottle deposit
+   "tax": number|null,
+   "delivery": number|null,         // delivery / freight / fuel / handling fees combined
+   "other": number|null,            // any other added fee not listed above
+   "discount": number|null,         // total discounts / credits as a POSITIVE number
+   "invoice_total": number|null     // grand total due as printed
+ },
+ "charge_details": string,          // one line listing each fee/credit with its printed label and amount
+ "warnings": [string]               // anything unclear, crossed out, handwritten, or that doesn't add up
+}
+Rules: Skip lines with zero shipped quantity but mention them in warnings. If a discount is already built into each line's unit cost, put it in warnings instead of charges.discount so it is not counted twice. Handwritten changes to quantities: use the handwritten value and add a warning.`;
+
+$("read").onclick = async () => {
+  if (!sample || !pages.length) return;
+  $("read").disabled = true;
+  setStatus("Reading the invoice… this can take up to a minute.");
+  try {
+    const r = await sample(PROMPT, { images: pages.map(p => p.blob), modelTier: "complex", cache: false });
+    const m = (r.text || "").match(/\{[\s\S]*\}/);
+    if (!m) throw new Error("Claude's answer had no invoice data. Try again, or retake the photos straight-on with good light.");
+    const data = JSON.parse(m[0]);
+    fillReview(data);
+    setStatus(`Read ${data.lines?.length || 0} lines. Check them below.`);
+    if (ITEMS.length && [...$("lines").children].some(tr => !tr._f.ls.dataset.id)) suggest();
+  } catch (e) {
+    const msg = e?.code === "not_granted" ? "Claude access wasn't allowed on this page." : e?.code === "rate_limited" ? "Too many reads right now. Wait a minute and try again." : (e?.message || "Couldn't read the invoice.");
+    setStatus(msg, true);
+  } finally { $("read").disabled = !pages.length || !sample; }
+};
+
+/* ---------- review form ---------- */
+let warnings = [], chargeDetails = "";
+function lineRow(l = {}) {
+  const tr = el("tr");
+  const mk = (cls, v, ph) => { const i = el("input", { value: v ?? "", placeholder: ph || "" }); if (cls) i.className = cls; i.oninput = recalc; return i; };
+  const code = mk("", l.vendor_code), desc = mk("", l.description), qty = mk("num", l.cases ?? ""), cost = mk("num", l.unit_cost ?? ""), tot = mk("num", l.line_total ?? "");
+  const ls = mk("", l.lsItemName || "", "Search Lightspeed items…"); ls.dataset.id = l.lsItemId || ""; attachPicker(ls);
+  const mt = el("div", { className: "rv-match" });
+  const rm = el("button", { className: "btn ghost sm", textContent: "×", title: "Remove line" }); rm.onclick = () => { tr.remove(); recalc(); };
+  tr.append(el("td", {}, code), el("td", {}, desc, l.note ? el("div", { className: "rv-small", textContent: l.note }) : ""), el("td", {}, qty), el("td", {}, cost), el("td", {}, tot), el("td", {}, ls, mt), el("td", {}, rm));
+  tr._f = { code, desc, qty, cost, tot, ls, mt };
+  ls.oninput = () => { const it = BYLABEL.get(ls.value); ls.dataset.id = it ? it[0] : ""; ls.dataset.src = it ? "picked" : ""; recalc(); };
+  return tr;
+}
+function applyLookup() {
+  const vendor = $("h-vendor").value;
+  for (const tr of $("lines").children) {
+    const f = tr._f; if (f.ls.value) continue;
+    const hit = lookup[keyFor(vendor, f.code.value, f.desc.value)];
+    if (hit) { const it = BYID.get(+hit.lsItemId); f.ls.value = it ? itemLabel(it) : hit.lsItemName; f.ls.dataset.id = hit.lsItemId; f.ls.dataset.src = "saved"; }
+  }
+}
+function keyFor(vendor, code, desc) { return slug(vendor) + "__" + slug(code || desc); }
+function fillReview(d) {
+  $("h-vendor").value = d.vendor || ""; $("h-inv").value = d.invoice_number || ""; $("h-date").value = d.invoice_date || "";
+  $("h-rcv").value = today(); $("h-po").value = d.vendor_po_number || "";
+  const c = d.charges || {};
+  const put = (id, v) => $(id).value = v == null ? "" : Number(v).toFixed(2);
+  put("c-ship", c.delivery); put("c-crv", c.crv); put("c-tax", c.tax); put("c-other", c.other); put("c-disc", c.discount != null ? Math.abs(c.discount) : null); put("c-total", c.invoice_total);
+  warnings = d.warnings || []; chargeDetails = d.charge_details || "";
+  $("h-notes").value = warnings.length ? "Check: " + warnings.join(" · ") : "";
+  $("lines").replaceChildren(...(d.lines || []).map(lineRow));
+  applyLookup();
+  $("review").hidden = false;
+  recalc();
+  $("review").scrollIntoView({ behavior: "smooth" });
+}
+$("addLine").onclick = () => { $("lines").append(lineRow()); recalc(); };
+["c-ship","c-crv","c-tax","c-other","c-disc","c-total"].forEach(id => $(id).oninput = recalc);
+$("h-vendor").oninput = () => { applyLookup(); recalc(); };
+
+function collect() {
+  const lines = [...$("lines").children].map(tr => { const f = tr._f; return {
+    vendorCode: f.code.value.trim(), description: f.desc.value.trim(), cases: num(f.qty.value), unitCost: num(f.cost.value),
+    lineTotal: f.tot.value === "" ? null : num(f.tot.value), lsItemName: f.ls.value.trim(), lsItemId: f.ls.dataset.id || "" }; });
+  const ch = { shipping: num($("c-ship").value), crv: num($("c-crv").value), tax: num($("c-tax").value), other: num($("c-other").value), discount: Math.abs(num($("c-disc").value)), invoiceTotal: $("c-total").value === "" ? null : num($("c-total").value) };
+  const subtotal = lines.reduce((s, l) => s + l.cases * l.unitCost, 0);
+  const otherPlus = ch.crv + ch.tax + ch.other;
+  const lsTotal = subtotal + ch.shipping + otherPlus - ch.discount;
+  const diff = ch.invoiceTotal == null ? null : Math.round((lsTotal - ch.invoiceTotal) * 100) / 100;
+  return { lines, charges: ch, calc: { subtotal: +subtotal.toFixed(2), shipping: ch.shipping, otherPlus: +otherPlus.toFixed(2), discount: ch.discount, lightspeedTotal: +lsTotal.toFixed(2), diff, cases: lines.reduce((s, l) => s + l.cases, 0) } };
+}
+function recalc() {
+  const { lines, calc, charges } = collect();
+  // Some vendors (SF Naturals) print line totals that include the per-case CRV deposit.
+  const gap = lines.reduce((s, l) => s + (l.lineTotal == null ? 0 : l.lineTotal - l.cases * l.unitCost), 0);
+  const crvInLines = charges.crv > 0 && Math.abs(gap - charges.crv) < 0.02;
+  [...$("lines").children].forEach((tr, i) => {
+    const l = lines[i], f = tr._f;
+    const lineGap = l.lineTotal == null ? 0 : l.lineTotal - l.cases * l.unitCost;
+    const bad = l.lineTotal != null && Math.abs(lineGap) > 0.015 && !(crvInLines && lineGap > 0);
+    const missing = !l.cases || !l.unitCost;
+    tr.classList.toggle("flag", bad || missing);
+    const it = BYID.get(+l.lsItemId), src = f.ls.dataset.src;
+    f.mt.className = "rv-match " + (!l.lsItemId ? "no" : src === "suggested" ? "sug" : "ok");
+    const brk = it && it[2] && it[3] ? ` · breaks into ${it[4]} singles` : it && !it[2] ? " · not set up as a case" : "";
+    f.mt.textContent = bad ? `Cases × cost = ${money(l.cases * l.unitCost)}, not ${money(l.lineTotal)}` : missing ? "Missing cases or cost"
+      : !l.lsItemId ? (l.lsItemName ? "Not a Lightspeed item: pick from the list" : "Not matched yet")
+      : (src === "suggested" ? "Suggested: check it" : src === "saved" ? "Saved match" : "Picked") + brk
+      + (crvInLines && lineGap > 0.015 ? ` · line total includes ${money(lineGap)} CRV` : "");
+    if (bad || missing) f.mt.className = "rv-match no";
+  });
+  const rows = [["Subtotal (" + calc.cases + " cases)", calc.subtotal], ["Shipping Cost", calc.shipping], ["Other (+/-): CRV + tax + other", calc.otherPlus], ["Discount", -calc.discount]];
+  const kids = rows.flatMap(([a, b]) => [el("div", { textContent: a }), el("div", { textContent: money(b) })]);
+  kids.push(el("div", { className: "tot", textContent: "Lightspeed total" }), el("div", { className: "tot", textContent: money(calc.lightspeedTotal) }));
+  kids.push(el("div", { textContent: "Invoice total (printed)" }), el("div", { textContent: charges.invoiceTotal == null ? "-" : money(charges.invoiceTotal) }));
+  $("check").replaceChildren(...kids);
+  let v;
+  if (charges.invoiceTotal == null) v = el("div", { className: "rv-verdict bad", textContent: "Enter the printed invoice total so the totals can be checked." });
+  else if (Math.abs(calc.diff) < 0.01) v = el("div", { className: "rv-verdict ok", textContent: "✓ Totals match the invoice." });
+  else v = el("div", { className: "rv-verdict bad", textContent: `✗ Off by ${money(calc.diff)} (Lightspeed ${calc.diff > 0 ? "higher" : "lower"}). Fix before saving, or explain it in the notes. Claude won't enter this PO until it's resolved.` });
+  const unmatched = lines.filter(l => !l.lsItemId).length;
+  $("verdict").replaceChildren(v, ...(unmatched ? [el("div", { className: "rv-verdict bad", textContent: `${unmatched} line${unmatched > 1 ? "s" : ""} not matched to a Lightspeed item yet.` })] : []));
+}
+
+/* ---------- item picker ---------- */
+const pop = el("div", { id: "rv-pop", hidden: true }); document.body.append(pop);
+let popFor = null, popSel = 0;
+function searchItems(q) {
+  const words = String(q).toLowerCase().replace(/\[case\]/g, "case").split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  return ITEMS.filter(it => { const n = it[1].toLowerCase(); return words.every(w => n.includes(w)); })
+    .sort((a, b) => b[2] - a[2] || a[1].length - b[1].length).slice(0, 30);
+}
+function choose(inp, it) { inp.value = itemLabel(it); inp.dataset.id = it[0]; inp.dataset.src = "picked"; pop.hidden = true; popFor = null; recalc(); }
+function attachPicker(inp) {
+  const render = () => {
+    const res = searchItems(inp.value.replace(/ · #\d+$/, ""));
+    if (!res.length) { pop.hidden = true; return; }
+    popFor = inp; popSel = 0;
+    pop.replaceChildren(...res.map((it, k) => { const d = el("div", { className: k === 0 ? "on" : "" }, it[1], el("small", { textContent: `#${it[0]}` + (it[2] && it[3] ? ` · ${it[4]} singles` : "") }));
+      d.onmousedown = e => { e.preventDefault(); choose(inp, it); }; return d; }));
+    const r = inp.getBoundingClientRect(); pop.style.left = (r.left + scrollX) + "px"; pop.style.top = (r.bottom + scrollY + 2) + "px"; pop.style.width = Math.min(Math.max(r.width, 420), innerWidth - 24) + "px";
+    pop.hidden = false;
+  };
+  inp.addEventListener("input", render);
+  inp.addEventListener("focus", () => { if (!inp.dataset.id && inp.value) render(); });
+  inp.addEventListener("blur", () => setTimeout(() => { if (popFor === inp) { pop.hidden = true; popFor = null; } }, 150));
+  inp.addEventListener("keydown", e => {
+    if (popFor !== inp || pop.hidden) return;
+    const kids = [...pop.children];
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); kids[popSel]?.classList.remove("on"); popSel = (popSel + (e.key === "ArrowDown" ? 1 : -1) + kids.length) % kids.length; kids[popSel].classList.add("on"); kids[popSel].scrollIntoView({ block: "nearest" }); }
+    else if (e.key === "Enter") { e.preventDefault(); const res = searchItems(inp.value.replace(/ · #\d+$/, "")); if (res[popSel]) choose(inp, res[popSel]); }
+    else if (e.key === "Escape") { pop.hidden = true; }
+  });
+}
+
+/* ---------- suggest matches ---------- */
+async function suggest() {
+  const rows = [...$("lines").children].filter(tr => !tr._f.ls.dataset.id);
+  if (!rows.length) { $("matchMsg").textContent = "Every line already has a match."; return; }
+  if (!ITEMS.length) return;
+  const job = rows.map((tr, i) => ({ i, invoice: `${tr._f.code.value} ${tr._f.desc.value}`.trim(), options: candidates(tr._f.desc.value).map(it => ({ id: it[0], name: it[1] })) }));
+  if (!sample) { job.forEach(j => { const o = j.options[0]; if (o) setSug(rows[j.i], o.id); }); recalc(); return; }
+  $("aiMatch").disabled = true; $("matchMsg").textContent = "Matching…";
+  try {
+    const prompt = `Match each vendor invoice line from "${$("h-vendor").value}" to the one Lightspeed item that is the same product in the same size and pack. Lines are bought by the case, so prefer the "[CASE]" item whose pack count matches; use a Single only if the invoice is clearly per unit. If the invoice doesn't say "Zero", "Diet" or another variant, pick the regular product. If none of the options is clearly the same product and size, answer null. Do not guess between flavors or sizes.
+Return ONLY JSON: {"matches":[{"i":number,"id":number|null}]}
+Lines:
+${JSON.stringify(job)}`;
+    const r = await sample(prompt, { modelTier: "default", cache: false });
+    const m = (r.text || "").match(/\{[\s\S]*\}/); const got = m ? JSON.parse(m[0]).matches || [] : [];
+    let n = 0; got.forEach(g => { const j = job.find(x => x.i === g.i); if (j && g.id && j.options.some(o => o.id === g.id)) { setSug(rows[j.i], g.id); n++; } });
+    $("matchMsg").textContent = `Suggested ${n} of ${rows.length}. Orange ones need a look; pick the rest from the list.`;
+  } catch (e) { $("matchMsg").textContent = "Couldn't suggest matches: " + (e?.message || e?.code || e); }
+  finally { $("aiMatch").disabled = false; recalc(); }
+}
+$("aiMatch").onclick = suggest;
+function setSug(tr, id) { const it = BYID.get(id); if (!it) return; tr._f.ls.value = itemLabel(it); tr._f.ls.dataset.id = id; tr._f.ls.dataset.src = "suggested"; }
+
+/* ---------- PDF + Drive ---------- */
+async function buildPdf() {
+  await loadLib(JSPDF);
+  const { jsPDF } = window.jspdf; let doc = null;
+  for (const p of pages) {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = p.url; });
+    const w = 612, h = Math.round(612 * img.naturalHeight / img.naturalWidth);
+    if (!doc) doc = new jsPDF({ unit: "pt", format: [w, h], orientation: h >= w ? "p" : "l" }); else doc.addPage([w, h], h >= w ? "p" : "l");
+    const c = document.createElement("canvas"); const s = Math.min(1, 1700 / Math.max(img.naturalWidth, img.naturalHeight));
+    c.width = img.naturalWidth * s; c.height = img.naturalHeight * s; c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    doc.addImage(c.toDataURL("image/jpeg", 0.78), "JPEG", 0, 0, w, h);
+  }
+  return doc.output("blob");
+}
+async function fileToDrive(title, blob) {
+  if (!mcp) throw { code: "no_mcp" };
+  let fileArgs = false; try { fileArgs = !!(await mcp.listTools()).fileArgs; } catch {}
+  const input = { title, parentId: DRIVE_FOLDER, contentMimeType: "application/pdf", disableConversionToGoogleType: true };
+  if (fileArgs) input.base64Content = { $file: { data: blob, name: (title.replace(/[^\w .-]/g, "") || "invoice.pdf"), type: "application/pdf" } };
+  else {
+    if (blob.size > 700000) throw { code: "too_big" };
+    input.base64Content = await new Promise(res => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.readAsDataURL(blob); });
+  }
+  const r = await mcp.callTool("Google Drive", "create_file", input);
+  const p = r.payload || {};
+  const id = p.id || p.file?.id;
+  const url = p.viewUrl || p.webViewLink || (id ? `https://drive.google.com/file/d/${id}/view` : null);
+  return url && /^https:\/\//.test(url) ? url : null;
+}
+const driveErr = e => ({ needs_reauth: "Reconnect Google Drive in claude.ai Settings → Connectors, then try again.",
+  server_not_connected: "Add the Google Drive connector in claude.ai Settings → Connectors.",
+  not_in_manifest: "Google Drive isn't allowed for this page. Allow it when asked, then try again.",
+  approval_required: "Google Drive needs your OK. Try again and allow it.",
+  too_big: "The scan is too large to send to Drive from here.",
+  no_mcp: "Google Drive isn't available on this page view." }[e?.code] || ("Drive filing failed: " + (e?.message || e?.code || e)));
+
+/* ---------- save ---------- */
+function poNote(d, driveUrl) {
+  const c = d.charges || {}, parts = [];
+  const fmtDate = x => x ? `${+x.slice(5,7)}/${+x.slice(8,10)}/${x.slice(0,4)}` : "";
+  let t = `${d.vendor} invoice ${d.invoiceNumber}` + (d.invoiceDate ? ` dated ${fmtDate(d.invoiceDate)}` : "") + ".";
+  if (d.vendorPo) t += ` Vendor PO ${d.vendorPo}.`;
+  [["CRV", c.crv], ["Tax", c.tax], ["Delivery", c.shipping], ["Other/tip", c.other], ["Discount", c.discount]].forEach(([k, v]) => { if (v) parts.push(`${k} ${money(v)}`); });
+  if (parts.length) t += " " + parts.join(", ") + ".";
+  if (c.invoiceTotal != null) t += ` Invoice total ${money(c.invoiceTotal)}.`;
+  t += ` ${d.calc?.cases ?? ""} cases.`;
+  if (d.notes) t += ` ${d.notes}`;
+  if (driveUrl) t += ` Scan: ${driveUrl}`;
+  return t.trim();
+}
+async function pdfFromUrls(urls) { const keep = pages; pages = urls.map(url => ({ url })); try { return await buildPdf(); } finally { pages = keep; } }
+async function fileDoc(id, d, pdfBlob) {
+  const title = `${d.receivedDate} - ${d.vendor} - Inv ${d.invoiceNumber}.pdf`;
+  const url = await fileToDrive(title, pdfBlob);
+  await db.doc(COL + "/" + id).update({ status: "filed", driveUrl: url, driveError: null, poNote: poNote(d, url), log: [...(d.log || []), { at: new Date().toISOString(), step: "filed" }] });
+  return url;
+}
+
+$("save").onclick = async () => {
+  const st = $("saveStatus"); st.classList.remove("err");
+  const fail = t => { st.textContent = t; st.classList.add("err"); };
+  if (!db) return fail("Can't save: open this page signed in to claude.ai.");
+  const vendor = $("h-vendor").value.trim(), inv = $("h-inv").value.trim();
+  if (!vendor || !inv) return fail("Vendor and invoice # are required.");
+  const data = collect();
+  if (!data.lines.length) return fail("Add at least one line.");
+  if (!pages.length) return fail("Add the invoice photos first.");
+  $("save").disabled = true; st.textContent = "Saving scan…";
+  const id = editing ? editing.id : `${$("h-rcv").value || today()}_${slug(vendor)}_${slug(inv)}`;
+  let d;
+  try {
+    const images = [];
+    if (editing && editing.images.length === pages.length) images.push(...editing.images);
+    else if (assets) { for (const [i, p] of pages.entries()) { const a = await assets.upload(p.blob); images.push({ id: a.id, page: i + 1 }); } }
+    d = {
+      vendor, invoiceNumber: inv, invoiceDate: $("h-date").value || null, receivedDate: $("h-rcv").value || today(), vendorPo: $("h-po").value.trim() || null,
+      notes: $("h-notes").value.trim(), chargeDetails, warnings, ...data, images,
+      totalsMatch: data.calc.diff != null && Math.abs(data.calc.diff) < 0.01,
+      allMatched: data.lines.every(l => l.lsItemId),
+      status: editing?.driveUrl ? "filed" : "ready", lightspeedPo: null, hold: null, driveUrl: editing?.driveUrl || null,
+      log: [...(editing?.log || []), { at: new Date().toISOString(), step: editing ? "edited" : "ready" }],
+      createdAt: editing?.createdAt || new Date().toISOString()
+    };
+    d.poNote = poNote(d, d.driveUrl);
+    await db.doc(COL + "/" + id).set(d);
+    for (const l of data.lines) if (l.lsItemId) {
+      const it = BYID.get(+l.lsItemId);
+      try { await db.doc(MATCHES + "/" + keyFor(vendor, l.vendorCode, l.description)).set({ vendor, vendorCode: l.vendorCode, description: l.description, lsItemId: String(l.lsItemId), lsItemName: it ? it[1] : l.lsItemName, savedAt: new Date().toISOString() }); } catch {}
+    }
+  } catch (e) { $("save").disabled = false; return fail("Save failed: " + (e?.message || e?.code || e)); }
+  const wasFiled = !!d.driveUrl; editing = null;
+  if (wasFiled) { st.textContent = "Saved."; $("save").disabled = false; goQueue(); return; }
+  st.textContent = "Saved. Filing the scan in Drive…";
+  try {
+    await fileDoc(id, d, await buildPdf());
+    st.textContent = `Saved and filed in Drive. Tell Claude "process the PO queue" to enter ${vendor} invoice ${inv} in Lightspeed.`;
+  } catch (e) {
+    try { await db.doc(COL + "/" + id).update({ driveError: driveErr(e) }); } catch {}
+    fail("Saved to the queue, but " + driveErr(e) + " You can retry from the Queue.");
+  }
+  $("save").disabled = false;
+  goQueue();
+};
+
+/* ---------- matches + queue ---------- */
+function loadLookup() {
+  try { db.collection(MATCHES).onSnapshot(s => { lookup = {}; s.docs.forEach(d => lookup[d.id] = d.data()); applyLookup(); recalc(); }, () => {}); } catch {}
+}
+function watchQueue() {
+  const t = setTimeout(() => $("queue").replaceChildren(el("div", { className: "rv-empty", textContent: "Queue is taking a while to load. Refresh the page." })), 10000);
+  db.collection(COL).onSnapshot(s => { clearTimeout(t); renderQueue(s.docs.map(d => ({ id: d.id, ...d.data() }))); },
+    e => { clearTimeout(t); $("queue").replaceChildren(el("div", { className: "rv-empty", textContent: "Couldn't load the queue: " + (e?.message || e?.code || e) })); });
+}
+function renderQueue(items) {
+  items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const open = items.filter(i => i.status !== "broken_down").length;
+  $("qcount").textContent = open ? `(${open})` : "";
+  if (!items.length) { $("queue").replaceChildren(el("div", { className: "rv-empty", textContent: "Nothing in the queue yet." })); return; }
+  $("queue").replaceChildren(...items.map(it => {
+    const idx = STEPS.findIndex(s => s[0] === it.status);
+    const steps = el("div", { className: "rv-steps" }, ...STEPS.map(([k, label], i) => el("span", { className: "rv-chip" + (i <= idx ? " done" : ""), textContent: label })));
+    if (it.totalsMatch === false) steps.prepend(el("span", { className: "rv-chip flag", textContent: "Totals don't match" }));
+    if (it.hold) steps.prepend(el("span", { className: "rv-chip flag", textContent: "On hold: " + it.hold }));
+    if (it.allMatched === false) steps.prepend(el("span", { className: "rv-chip flag", textContent: "Unmatched items" }));
+    const meta = el("div", { className: "rv-meta", textContent: [`Invoice ${it.invoiceNumber}`, it.receivedDate && `received ${it.receivedDate}`, `${it.calc?.cases ?? "?"} cases`, `invoice ${money(it.charges?.invoiceTotal)}`, it.lightspeedPo && `Lightspeed PO #${it.lightspeedPo}`].filter(Boolean).join(" · ") });
+    const main = el("div", { className: "rv-main" }, el("h4", { textContent: it.vendor }), meta, steps);
+    if (it.driveUrl && /^https:\/\//.test(it.driveUrl)) main.append(el("div", { className: "rv-small", style: "margin-top:6px" }, el("a", { href: it.driveUrl, target: "_blank", rel: "noopener", textContent: "Open scan in Drive" })));
+    const acts = el("div", { className: "rv-row", style: "margin-top:8px" });
+    if (!it.driveUrl) {
+      const b = el("button", { className: "btn ghost sm", textContent: "File scan to Drive" });
+      const m = el("div", { className: "rv-small", textContent: it.driveError || "Scan not in Drive yet." });
+      b.onclick = async () => { b.disabled = true; m.textContent = "Filing…"; try { const blob = await pdfFromUrls((it.images || []).map(im => "/_blob/" + im.id)); await fileDoc(it.id, it, blob); } catch (e) { m.textContent = driveErr(e); b.disabled = false; } };
+      main.append(m); acts.append(b);
+    }
+    if (["ready", "filed"].includes(it.status)) { const eb = el("button", { className: "btn ghost sm", textContent: "Open to check and match" }); eb.onclick = () => loadForEdit(it); acts.append(eb); }
+    if (acts.children.length) main.append(acts);
+    main.append(entrySheet(it));
+    const thumbs = el("div", { className: "rv-row" }, ...(it.images || []).slice(0, 3).map(im => { const i = el("img", { src: "/_blob/" + im.id, alt: "Page " + im.page, style: "width:52px;height:66px;object-fit:cover;border:1px solid var(--line);cursor:zoom-in" }); i.onclick = () => openViewer("/_blob/" + im.id); return i; }));
+    return el("div", { className: "rv-q" }, thumbs, main);
+  }));
+}
+let editing = null;
+async function loadForEdit(it) {
+  pages.forEach(p => URL.revokeObjectURL(p.url)); pages = [];
+  for (const im of it.images || []) { try { const b = await (await fetch("/_blob/" + im.id)).blob(); pages.push({ blob: b, url: URL.createObjectURL(b), name: "Page " + im.page }); } catch {} }
+  renderThumbs();
+  editing = { id: it.id, images: it.images || [], log: it.log || [], driveUrl: it.driveUrl || null, status: it.status, createdAt: it.createdAt };
+  const c = it.charges || {};
+  fillReview({ vendor: it.vendor, invoice_number: it.invoiceNumber, invoice_date: it.invoiceDate, vendor_po_number: it.vendorPo,
+    charges: { delivery: c.shipping, crv: c.crv, tax: c.tax, other: c.other, discount: c.discount, invoice_total: c.invoiceTotal },
+    charge_details: it.chargeDetails, warnings: [], lines: (it.lines || []).map(l => ({ vendor_code: l.vendorCode, description: l.description, cases: l.cases, unit_cost: l.unitCost, line_total: l.lineTotal, lsItemId: l.lsItemId, lsItemName: l.lsItemName })) });
+  warnings = it.warnings || []; $("h-notes").value = it.notes || ""; $("h-rcv").value = it.receivedDate || today();
+  [...$("lines").children].forEach(tr => { const i = BYID.get(+tr._f.ls.dataset.id); if (i) { tr._f.ls.value = itemLabel(i); tr._f.ls.dataset.src = "saved"; } });
+  recalc(); sub("new"); setStatus(`Editing ${it.vendor} invoice ${it.invoiceNumber}. Save updates the same queue entry.`);
+}
+function entrySheet(it) {
+  const c = it.charges || {}, row = (k, v) => el("tr", {}, el("td", { className: "k", textContent: k }), el("td", { textContent: v ?? "" }));
+  const head = el("table", {}, el("tbody", {},
+    row("Vendor", it.vendor), row("Reference #", it.invoiceNumber), row("Ordered / received", `${it.invoiceDate || it.receivedDate} / ${it.receivedDate}`),
+    row("Shipping Cost", money(c.shipping || 0) + " · Don't apply to items"),
+    row("Other (+/-)", money((c.crv || 0) + (c.tax || 0) + (c.other || 0)) + ` (CRV ${money(c.crv || 0)}, tax ${money(c.tax || 0)}, other ${money(c.other || 0)}) · Don't apply to items`),
+    row("Discount", money(c.discount || 0) + " · Don't apply to items"),
+    row("Expected total", money(it.calc?.lightspeedTotal) + (it.totalsMatch ? " · matches invoice" : ` · invoice says ${money(c.invoiceTotal)}`)),
+    row("General notes", it.poNote || "")));
+  const lt = el("table", {}, el("thead", {}, el("tr", {}, ...["Lightspeed item", "Cases", "Cost / case", "Breaks into"].map(h => el("th", { textContent: h })))),
+    el("tbody", {}, ...(it.lines || []).map(l => { const i = BYID.get(+l.lsItemId);
+      return el("tr", {}, el("td", { textContent: l.lsItemId ? `#${l.lsItemId} ${i ? i[1] : l.lsItemName}` : `NOT MATCHED: ${l.description}` }), el("td", { textContent: l.cases }), el("td", { textContent: money(l.unitCost) }),
+        el("td", { textContent: i && i[2] && i[3] ? `${l.cases * i[4]} × #${i[3]}` : "-" })); })));
+  return el("details", { className: "rv-sheet" }, el("summary", { textContent: "Lightspeed entry sheet" }), head, el("div", { className: "tbl-wrap" }, lt));
+}
+$("copyAsk").onclick = async () => { try { await navigator.clipboard.writeText("process the PO queue"); $("copyMsg").textContent = "Copied. Paste it in your Claude chat."; } catch { $("copyMsg").textContent = 'Type "process the PO queue" in your Claude chat.'; } };
 })();
 </script>

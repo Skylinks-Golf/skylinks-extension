@@ -1,4 +1,7 @@
-# PO Intake
+# PO Intake (replaced)
+
+**Replaced by the 6 · Receive invoices tab on the [Pro Shop Order Run](https://claude.ai/artifact/A46JNVDxUR84mEGpHv8Ujq)** (`artifacts/order-run/`). This page stays live until the tab is proven and the invoices saved here have been processed; retiring it needs LC to type "approve". `items.json` here is still the item list the Order Run publishes.
+
 
 Staff drop or scan a vendor invoice (photos or PDF), Claude reads it, they check the fields and match each line to a Lightspeed item, then Save. The scan is filed to Drive as one PDF and the invoice joins a queue. The queue worker (skill `.claude/skills/skylinks-po-queue/`) enters queued invoices as Lightspeed purchase orders when someone asks.
 
