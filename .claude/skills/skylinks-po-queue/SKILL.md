@@ -84,12 +84,14 @@ Read the order back (`/Order/<id>.json` plus its OrderLines, or the PO screen): 
 One line per doc: vendor, invoice #, PO # (link), total, OK / held (reason). Ask once to check in all the OK ones.
 
 ### 8. After the OK, per PO
-1. Note current stock (`qoh`) for each case item's single item.
-2. Check in all lines.
-3. Re-read the total. LC has seen fees drop off at check-in. If it changed → hold and report; don't break down.
+1. Note current stock (`qoh`) for each case item and its single item, and each case item's prices and costs.
+2. Check in on the PO screen: status dropdown → Check-In, Ordered Date = invoice date → Save Changes. Re-check every line's cost (see Gotcha). Then **Receive All Items** → **Add Received To Inventory** → confirm **Add items**.
+3. The confirm box shows only the shipment: Shipping $0.00 and no Other (CRV), so its total is the item subtotal (PO #851: $588.69 vs $635.19). **LC's rule (2026-11-25): add it anyway**, as long as the PO's own Ordered Total still equals the invoice. Re-read the PO total after adding; if the PO total itself changed → hold and report; don't break down.
+   - The red $0.00 Retail Price column on check-in is normal: case items are not sold and already have $0 retail. Confirm afterwards that no item's prices or costs changed.
+   - Non-inventory lines (e.g. #4036 Crystal Geyser 1 Gallon) show as received on the PO but add no stock and can't be broken down. Skip them in step 5.
 4. `status: checked_in`, log.
-5. For each case item: Box tab → Break Down, quantity = cases received → single item.
-6. Confirm each single's `qoh` rose by cases × componentQty. If not → hold and report.
+5. For each case item: `?name=item.views.item&form_name=view&id=<caseItemID>&tab=box_items` → "Quantity to break down" = cases received, check "To single item" is the expected single → **Break Down**. Setting the field and clicking the button from page JS works and avoids screenshots.
+6. Confirm each case is back to its starting count and each single's `qoh` rose by cases × componentQty. On PO #851, 2 of 19 breakdowns silently didn't take; re-check every one and retry only the ones that didn't move (never re-run one that did). If a retry fails → hold and report.
 7. `status: broken_down`, log.
 
 ## Logging
