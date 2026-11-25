@@ -1268,10 +1268,11 @@ let lastItems = [];
 function renderQueue(items) {
   lastItems = items;
   items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-  const open = items.filter(i => i.status !== "broken_down").length;
-  $("qcount").textContent = open ? `(${open})` : "";
-  if (!items.length) { $("queue").replaceChildren(el("div", { className: "rv-empty", textContent: "Nothing in the queue yet." })); return; }
-  $("queue").replaceChildren(...items.map(it => {
+  // Finished POs and duplicate entries leave the queue but stay in the database (their log is the history and the cost undo list).
+  const isDone = i => i.status === "broken_down" || String(i.hold || "").startsWith("Duplicate");
+  const openItems = items.filter(i => !isDone(i)), doneItems = items.filter(isDone);
+  $("qcount").textContent = openItems.length ? `(${openItems.length})` : "";
+  const card = it => {
     const idx = STEPS.findIndex(s => s[0] === it.status);
     const steps = el("div", { className: "rv-steps" }, ...STEPS.map(([k, label], i) => el("span", { className: "rv-chip" + (i <= idx ? " done" : ""), textContent: label })));
     if (it.totalsMatch === false) steps.prepend(el("span", { className: "rv-chip flag", textContent: "Totals don't match" }));
@@ -1308,8 +1309,16 @@ function renderQueue(items) {
     main.append(entrySheet(it));
     const thumbs = el("div", { className: "rv-row" }, ...(it.images || []).slice(0, 3).map(im => { const i = el("img", { src: "/_blob/" + im.id, alt: "Page " + im.page, style: "width:52px;height:66px;object-fit:cover;border:1px solid var(--line);cursor:zoom-in" }); i.onclick = () => openViewer("/_blob/" + im.id); return i; }));
     return el("div", { className: "rv-q" }, thumbs, main);
-  }));
+  };
+  const kids = openItems.length ? openItems.map(card) : [el("div", { className: "rv-empty", textContent: items.length ? "Nothing waiting. Finished invoices are below." : "Nothing in the queue yet." })];
+  if (doneItems.length) {
+    const fin = el("details", { className: "rv-sheet", style: "margin-top:14px" }, el("summary", { textContent: `Finished (${doneItems.length})` }));
+    fin.open = !!finishedOpen; fin.ontoggle = () => { finishedOpen = fin.open; };
+    fin.append(...doneItems.map(card)); kids.push(fin);
+  }
+  $("queue").replaceChildren(...kids);
 }
+let finishedOpen = false;
 let editing = null;
 async function loadForEdit(it) {
   pages.forEach(p => URL.revokeObjectURL(p.url)); pages = [];
