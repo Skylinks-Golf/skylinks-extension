@@ -92,7 +92,8 @@ One line per doc: vendor, invoice #, PO # (link), total, OK / held (reason). Ask
 4. `status: checked_in`, log.
 5. For each case item: `?name=item.views.item&form_name=view&id=<caseItemID>&tab=box_items` → "Quantity to break down" = cases received, check "To single item" is the expected single → **Break Down**. Setting the field and clicking the button from page JS works and avoids screenshots.
 6. Confirm each case is back to its starting count and each single's `qoh` rose by cases × componentQty. On PO #851, 2 of 19 breakdowns silently didn't take; re-check every one and retry only the ones that didn't move (never re-run one that did). If a retry fails → hold and report.
-7. `status: broken_down`, log.
+7. Mark the PO **Finished** (LC, 2026-11-25): status dropdown → Finished → Save Changes (avoid the green Finished button, it may raise a confirm dialog). Re-read: `complete` = true and the total still equals the invoice.
+8. `status: broken_down`, log.
 
 ## Logging
 
