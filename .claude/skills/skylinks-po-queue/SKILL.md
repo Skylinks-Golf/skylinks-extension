@@ -13,7 +13,7 @@ Artifact: https://claude.ai/artifact/A46JNVDxUR84mEGpHv8Ujq
 Run it only when a person asks. Work in their signed-in Chrome (Claude in Chrome) on `us.merchantos.com`.
 
 **Two ways it starts:**
-- **Buttons on the Queue (normal):** **Enter in Lightspeed** and **Check in & break down** fire the person's "Enter Pro Shop POs in Lightspeed" trigger (Claude Code Remote, set up once per computer from the Queue). Each press is that person's OK for that one step on that one invoice. The run follows `PO_PROMPT` in `artifacts/order-run/index.html`, which mirrors this file: **when you change the steps here, change `PO_PROMPT` and bump `PO_PROMPT_VERSION`** so people get an "Update setup" button.
+- **Buttons on the Queue (normal):** **Enter in Lightspeed** and **Check in & break down** fire the person's "Enter Pro Shop POs in Lightspeed" trigger (Claude Code Remote, set up once per computer from the Queue). Each press is that person's OK for that one step on that one invoice. The run follows `PO_PROMPT` in `artifacts/order-run/index.html` (and LC's task trig_01Ge89TJjJ31Ebw4tKCzokpq, updated with RemoteTrigger `update` `{prompt}`), which mirrors this file: **when you change the steps here, change `PO_PROMPT` and bump `PO_PROMPT_VERSION`** so people get an "Update setup" button.
 - **Chat (backup):** someone says "process the PO queue" in Claude Code. Then the two OKs below are asked in chat.
 
 ## Hard rules
@@ -64,7 +64,10 @@ Run it only when a person asks. Work in their signed-in Chrome (Claude in Chrome
 List `invoices`. Take docs with `status` `ready` or `filed` and no `hold`, oldest `receivedDate` first. Also list held docs in the report so they aren't forgotten.
 
 ### 2. Screen each doc (no Lightspeed writes)
+- `needsCheck` > 0 (lines the page flagged that staff haven't ticked: a reading Claude wasn't sure of, a second-read disagreement, or a size/pack mismatch) → `hold` = "N lines need a check on the page". Skip.
 - Any line without `lsItemId`, or `allMatched` not true → set `hold` = "Missing Lightspeed items: <descriptions>". Skip.
+- Size/pack: each line's `size` and `pack` (or the description) must match the item's name and its case breakdown count. Mismatch → hold.
+- Price: unless `priceConfirmed` is true, compare each line's `unitCost` with the item's `defaultCost`. Off by more than 15% → `hold` = "Price check: <item> invoice $x vs Lightspeed $y (z%)", `holdKind` = "price". Staff release it with "Prices are right" on the Queue after checking.
 - `totalsMatch` false → `hold` = "Totals don't match by $x.xx". Skip.
 - Re-add `calc` yourself: sum(cases × unitCost) + shipping + crv + tax + other − discount must equal `charges.invoiceTotal` to the cent. If not → hold.
 - Every `lsItemId` must exist in Lightspeed (`/Item/<id>.json`, not archived). If not → hold.
