@@ -36,7 +36,12 @@ Run it only when a person asks. Work in their signed-in Chrome (Claude in Chrome
 - Read API from the signed-in page: `fetch('/API/Account/305872/<Resource>.json', {credentials:'same-origin'})`. Values are strings; a single result is an object, not an array.
 - PO screen: `?name=purchase.views.purchase&form_name=view&id=<orderID>`. List: Inventory → Purchase Orders. Status: Open → Ordered → Check-In → Finished.
 - Case items are `itemType: box`, named `[CASE] ...`, with one ItemComponent (single item + qty). Box tab: `?name=item.views.item&form_name=view&id=<caseItemID>&tab=box_items` → "Break Down Boxes Into Singles".
-- **The API write path (POST Order / OrderLine) is not verified.** Use the PO screen in the UI until a run proves the API works. When it does, record the exact calls in this file in the same PR as the proof.
+- **Writes go through the API** (proven 2026-11-25 on PO #851, SF Naturals 218202). Run them with `fetch` from a signed-in `us.merchantos.com` tab, `credentials:'same-origin'`, `Content-Type: application/json`:
+  - Add a line: `POST /API/Account/305872/OrderLine.json` `{orderID, itemID, quantity, price}` (strings; `price` = cost per case). Check the order's existing lines first so a retry never adds a line twice.
+  - Set charges: `PUT /API/Account/305872/Order/<id>.json` `{shipCost, otherCost, discount}`. `shippingCostMethod`/`discountMethod` `"total"` is the screen's "Don't apply to items" (the default on new POs).
+  - Fix a line's cost: `PUT /API/Account/305872/OrderLine/<orderLineID>.json` `{price, originalPrice}`.
+  - **Gotcha:** after the charges `PUT` (or opening the PO screen), Lightspeed reset 7 of 20 line costs to each item's stored cost. Always re-read every line after the last write, put back any cost that differs from the invoice, then reload the PO screen and read again before calling it verified.
+- **Screen fallback** (API unavailable, or a person entering by hand; LC's method): on the PO, Add items → search filtered by vendor and item type "box", tick the invoice's items and add them **page by page**. Lightspeed forgets ticks when you change pages. Screen work costs far more usage than the API, so use it only as the backup.
 
 ## How charges go on the PO
 
@@ -66,8 +71,8 @@ List `invoices`. Take docs with `status` `ready` or `filed` and no `hold`, oldes
 ### 3. Ask before creating
 Show one table: vendor, invoice #, lines, cases, Lightspeed total, invoice total, Drive scan yes/no, plus each held doc with its reason. Say the undo: an Open PO can be deleted in Lightspeed (needs "approve"). Wait for LC or Brandon to say go.
 
-### 4. Create each PO (UI)
-New PO → vendor → Reference # → ordered date = `invoiceDate` → note → add each line (search by item ID) with quantity and cost → set Shipping / Other / Discount as above → Apply changes. Stop at Open/Ordered; don't check in.
+### 4. Create each PO
+On the screen: Inventory → New Order → vendor → Reference # → General Notes = short `poNote` (vendor, invoice #, date, vendor PO, charges, total, cases, scan link; leave out reading warnings and vendor account numbers) → Save Changes. Then by API: add every line, set charges, re-check every line's cost (see Gotcha). Stop at Open; don't check in.
 
 ### 5. Verify
 Read the order back (`/Order/<id>.json` plus its OrderLines, or the PO screen): line count, each qty and cost, and the total must equal `calc.lightspeedTotal` and `charges.invoiceTotal`. Any mismatch → `hold` with the difference, leave the PO Open, report. Don't try to "fix" it by fudging another field.
