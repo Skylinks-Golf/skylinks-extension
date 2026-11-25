@@ -5,7 +5,7 @@ description: Process the Skylinks PO Intake queue. Enter saved vendor invoices a
 
 # Skylinks PO queue worker
 
-Turns invoices saved on the **6 · Receive invoices** tab of the Pro Shop Order Run into Lightspeed Retail purchase orders.
+Turns invoices saved on the **6 · Receive invoices** tab of Pro Shop Ordering & Receiving (formerly the Order Run) into Lightspeed Retail purchase orders.
 Page source: `artifacts/order-run/index.html` (see its README for the data model).
 Artifact: https://claude.ai/artifact/A46JNVDxUR84mEGpHv8Ujq
 (The older stand-alone PO Intake page, https://claude.ai/artifact/QhJRWAtFKgCcLYMKz6jvhT, uses `pos` and `lookup` instead. Use it only if someone saved an invoice there.)
@@ -25,7 +25,7 @@ Run it only when a person asks. Work in their signed-in Chrome (Claude in Chrome
 
 ## Where things are
 
-**Queue (Order Run artifact database)**, read and write with the `ArtifactData` tool, `url` = the artifact link above.
+**Queue (Ordering & Receiving artifact database)**, read and write with the `ArtifactData` tool, `url` = the artifact link above.
 - `invoices/<receivedDate>_<vendor-slug>_<invoice-slug>`: one doc per invoice. Fields used here: `vendor, invoiceNumber, invoiceDate, vendorPo, lines[{vendorCode, description, cases, unitCost, lsItemId, lsItemName}], charges{shipping, crv, tax, other, discount, invoiceTotal}, calc{lightspeedTotal, diff, cases}, totalsMatch, allMatched, driveUrl, poNote, status, lightspeedPo, hold, log[{at, step}]`.
 - `status` flow: `ready` → `filed` → `entered` → `checked_in` → `broken_down`. `hold` = reason text.
 - Every write passes `if_version` from the doc you read. On a version conflict, re-read and redo; never overwrite someone's change.

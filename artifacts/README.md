@@ -13,8 +13,8 @@ artifacts/
 
 | Slug | Artifact | Owner |
 |---|---|---|
-| `order-run` | [Pro Shop Order Run](https://claude.ai/artifact/A46JNVDxUR84mEGpHv8Ujq) | LC |
-| `po-intake` | [Skylinks PO Intake](https://claude.ai/artifact/QhJRWAtFKgCcLYMKz6jvhT) (replaced by Order Run tab 6) | LC |
+| `order-run` | [Pro Shop Ordering & Receiving](https://claude.ai/artifact/A46JNVDxUR84mEGpHv8Ujq) (was Order Run) | LC |
+| `po-intake` | [Skylinks PO Intake](https://claude.ai/artifact/QhJRWAtFKgCcLYMKz6jvhT) (replaced by Ordering & Receiving tab 6) | LC |
 
 ## Workflow
 
