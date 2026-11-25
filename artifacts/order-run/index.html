@@ -1230,6 +1230,7 @@ function entrySheet(it) {
 // Keep in step with .claude/skills/skylinks-po-queue/SKILL.md. Bump PO_PROMPT_VERSION when the prompt changes:
 // people then see "Update setup" and press it once to load the new steps.
 const PO_PROMPT_VERSION = "2026-11-25.1";
+const PO_TRIGGER_ID = "trig_01Ge89TJjJ31Ebw4tKCzokpq"; // "Enter Pro Shop POs in Lightspeed (Ilse)", made from LC's Claude chat
 const PO_PROMPT = [
 "A Skylinks at Buchanan Fields staff member pressed a button on the Receive invoices tab of the Pro Shop Ordering & Receiving page. Their name and the job are appended below as JSON: {who, mode, artifact, invoices:[{id, vendor, invoiceNumber, invoiceDate, vendorPo, lines:[{vendorCode, description, cases, unitCost, lsItemId, lsItemName}], charges:{shipping, crv, tax, other, discount, invoiceTotal}, calc, driveUrl, poNote, status, lightspeedPo}]}. Call them by \"who\" (if empty, \"LC\"). Pacific time. Money as $42.00, dates ISO. Be quick and spend little: batch browser actions, use the Lightspeed API instead of screenshots wherever these steps allow, short messages.",
 "",
@@ -1281,6 +1282,9 @@ async function initPoRunner() {
     try { poMe = await poUser.id(); } catch (e) {}
     try { if (poMe) { const ps = await poUser.profiles([poMe]); poMeName = (ps && ps[poMe] && ps[poMe].name) || ""; } } catch (e) {}
     if (db && poMe) { try { const sn = await db.collection("runners").doc(poMe).get(); if (sn.exists) { const d = sn.data() || {}; poTrig = d.poTriggerId || null; poTrigVer = d.poPromptVersion || null; } } catch (e) {} }
+    // LC's task was made from her Claude chat (the page can't create one), like Fill my carts' TRIGGER_ID.
+    let own = false; try { own = poUser.isOwner(); } catch (e) {}
+    if (!poTrig && own) { poTrig = PO_TRIGGER_ID; poTrigVer = PO_PROMPT_VERSION; }
   }
   renderRunBar();
 }
@@ -1303,7 +1307,7 @@ async function setupPo() {
     poTrig = id; poTrigVer = PO_PROMPT_VERSION;
     m.textContent = "You're set up. If the Claude app shows an approval card for this computer, approve it."; b.hidden = true;
     renderQueue(lastItems);
-  } catch (e) { m.textContent = "Setup didn't finish (" + ((e && e.code) || "error") + "). Ask LC to set it up from her Claude chat."; b.disabled = false; }
+  } catch (e) { m.textContent = "Setup didn't finish (" + ((e && e.code) || "error") + "). This task has to be made from your own Claude chat: ask LC for the setup message to paste there."; b.disabled = false; }
 }
 $("setupBtn").onclick = setupPo;
 const runPayload = it => ({ id: it.id, vendor: it.vendor, invoiceNumber: it.invoiceNumber, invoiceDate: it.invoiceDate, vendorPo: it.vendorPo, lines: (it.lines || []).map(l => ({ vendorCode: l.vendorCode, description: l.description, cases: l.cases, unitCost: l.unitCost, lsItemId: l.lsItemId, lsItemName: l.lsItemName })), charges: it.charges, calc: it.calc, driveUrl: it.driveUrl, poNote: it.poNote, status: it.status, lightspeedPo: it.lightspeedPo || null });
