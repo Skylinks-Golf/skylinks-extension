@@ -19,7 +19,7 @@ Run it only when a person asks. Work in their signed-in Chrome (Claude in Chrome
 ## Hard rules
 
 - **Never enter wrong numbers.** If the Lightspeed total doesn't equal the invoice total at any step, stop that PO, set `hold`, and report.
-- **Never create, edit, archive or re-price items.** Item writes are manager-only (see skill `skylinks-lightspeed-items`). A missing item means the whole PO is held.
+- **Never create or archive items, and never change retail prices or other item fields.** The one item change allowed is **cost from the invoice** (LC, 2026-11-25): after a PO is verified, set the case item's `defaultCost` = invoice list price per case and its single's `defaultCost` = that ÷ units per case (4 decimals). Log every before → after; that list is the undo. A missing item means the whole PO is held.
 - **Never touch the Lightspeed Golf tee sheet.**
 - **One invoice = one queue entry = one Lightspeed PO = one Drive file.** Check for an existing PO before creating one.
 - **Find IDs by lookup, never guess** (vendor, item, order).
@@ -64,10 +64,10 @@ Run it only when a person asks. Work in their signed-in Chrome (Claude in Chrome
 List `invoices`. Take docs with `status` `ready` or `filed` and no `hold`, oldest `receivedDate` first. Also list held docs in the report so they aren't forgotten.
 
 ### 2. Screen each doc (no Lightspeed writes)
-- `needsCheck` > 0 (lines the page flagged that staff haven't ticked: a reading Claude wasn't sure of, a second-read disagreement, or a size/pack mismatch) → `hold` = "N lines need a check on the page". Skip.
+- `needsCheck` > 0 (a size/pack mismatch staff haven't ticked; reading notes don't block) → `hold` = "N lines need a check on the page". Skip.
 - Any line without `lsItemId`, or `allMatched` not true → set `hold` = "Missing Lightspeed items: <descriptions>". Skip.
 - Size/pack: each line's `size` and `pack` (or the description) must match the item's name and its case breakdown count. Mismatch → hold.
-- Price: unless `priceConfirmed` is true, compare each line's list price (`unitCost`) and its net per case (`unitCost` − `lineDiscount` / `cases`) with the item's `defaultCost`. The line passes if either is within 15% (Lightspeed usually holds the list price, since discounts aren't applied to items). Neither within 15% → `hold` = "Price check: <item> invoice $x vs Lightspeed $y (z%)", `holdKind` = "price". Staff release it with "Prices are right" on the Queue after checking.
+- No price comparison with Lightspeed: the invoice is the truth (LC, 2026-11-25). Costs are updated from it instead.
 - `totalsMatch` false → `hold` = "Totals don't match by $x.xx". Skip.
 - Re-add `calc` yourself: sum(cases × unitCost) + shipping + crv + tax + other − discount must equal `charges.invoiceTotal` to the cent. If not → hold.
 - Every `lsItemId` must exist in Lightspeed (`/Item/<id>.json`, not archived). If not → hold.
@@ -84,8 +84,8 @@ On the screen: Inventory → New Order → vendor → Reference # → General No
 ### 5. Verify
 Read the order back (`/Order/<id>.json` plus its OrderLines, or the PO screen): line count, each qty and cost, and the total must equal `calc.lightspeedTotal` and `charges.invoiceTotal`. Any mismatch → `hold` with the difference, leave the PO Open, report. Don't try to "fix" it by fudging another field.
 
-### 6. Update the doc
-`status: entered`, `lightspeedPo: <orderID>`, log `"PO <id> created, total $x.xx verified"`.
+### 6. Update costs, then the doc
+Set item costs from the invoice (see Hard rules), read them back, log before → after. Then `status: entered`, `lightspeedPo: <orderID>`, log `"PO <id> created, total $x.xx verified"`.
 
 ### 7. Report and ask for check-in
 One line per doc: vendor, invoice #, PO # (link), total, OK / held (reason). Ask once to check in all the OK ones.
