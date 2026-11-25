@@ -12,6 +12,10 @@ Artifact: https://claude.ai/artifact/A46JNVDxUR84mEGpHv8Ujq
 
 Run it only when a person asks. Work in their signed-in Chrome (Claude in Chrome) on `us.merchantos.com`.
 
+**Two ways it starts:**
+- **Buttons on the Queue (normal):** **Enter in Lightspeed** and **Check in & break down** fire the person's "Enter Pro Shop POs in Lightspeed" trigger (Claude Code Remote, set up once per computer from the Queue). Each press is that person's OK for that one step on that one invoice. The run follows `PO_PROMPT` in `artifacts/order-run/index.html`, which mirrors this file: **when you change the steps here, change `PO_PROMPT` and bump `PO_PROMPT_VERSION`** so people get an "Update setup" button.
+- **Chat (backup):** someone says "process the PO queue" in Claude Code. Then the two OKs below are asked in chat.
+
 ## Hard rules
 
 - **Never enter wrong numbers.** If the Lightspeed total doesn't equal the invoice total at any step, stop that PO, set `hold`, and report.
