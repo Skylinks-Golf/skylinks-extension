@@ -1210,7 +1210,15 @@ $("save").onclick = async () => {
   if (!data.lines.length) return fail("Add at least one line.");
   if (!pages.length) return fail("Add the invoice photos first.");
   $("save").disabled = true; st.textContent = "Saving scan…";
-  const id = editing ? editing.id : `${$("h-rcv").value || today()}_${slug(vendor)}_${slug(inv)}`;
+  let id = editing ? editing.id : `${$("h-rcv").value || today()}_${slug(vendor)}_${slug(inv)}`;
+  if (!editing) {   // one invoice = one queue entry, even if the vendor name reads differently
+    try {
+      const same = (await db.collection(COL).where("invoiceNumber", "==", inv).get()).docs.map(d => ({ id: d.id, ...d.data() })).filter(x => !(x.hold || "").startsWith("Duplicate"));
+      const done = same.find(x => !["ready", "filed"].includes(x.status));
+      if (done) { $("save").disabled = false; return fail(`Invoice ${inv} is already in the queue (${done.vendor}, ${done.status === "entered" ? "PO #" + done.lightspeedPo + " entered" : done.status}). Open that entry instead of saving a new one.`); }
+      if (same.length) { const ex = same.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0]; id = ex.id; editing = { id: ex.id, images: [], log: ex.log || [], driveUrl: ex.driveUrl || null, status: ex.status, createdAt: ex.createdAt }; }
+    } catch (e) {}
+  }
   let d;
   try {
     const images = [];
@@ -1335,7 +1343,7 @@ function entrySheet(it) {
 /* ---------- Enter in Lightspeed / Check in buttons (Claude Code Remote trigger, like Fill my carts) ---------- */
 // Keep in step with .claude/skills/skylinks-po-queue/SKILL.md. Bump PO_PROMPT_VERSION when the prompt changes:
 // people then see "Update setup" and press it once to load the new steps.
-const PO_PROMPT_VERSION = "2026-11-25.5";
+const PO_PROMPT_VERSION = "2026-11-25.6";
 const PO_TRIGGER_ID = "trig_01Ge89TJjJ31Ebw4tKCzokpq"; // "Enter Pro Shop POs in Lightspeed (Ilse)", made from LC's Claude chat
 const PO_PROMPT = [
 "A Skylinks at Buchanan Fields staff member pressed a button on the Receive invoices tab of the Pro Shop Ordering & Receiving page. Their name and the job are appended below as JSON: {who, mode, artifact, invoices:[{id, vendor, invoiceNumber, invoiceDate, vendorPo, lines:[{vendorCode, description, size, pack, cases, unitCost, lineDiscount, lsItemId, lsItemName}], charges:{shipping, crv, tax, other, discount, invoiceTotal}, calc, driveUrl, poNote, status, lightspeedPo, needsCheck, priceConfirmed}]}. Call them by \"who\" (if empty, \"LC\"). Pacific time. Money as $42.00, dates ISO. Be quick and spend little: batch browser actions, use the Lightspeed API instead of screenshots wherever these steps allow, short messages.",
@@ -1360,7 +1368,7 @@ const PO_PROMPT = [
 "MODE enter, per invoice",
 "1. Screen without writing: needsCheck is 0 (lines staff haven't checked yet: hold \"N lines need a check on the page\"); every line has lsItemId; re-add sum(cases x unitCost) + shipping + crv + tax + other - discount = invoiceTotal to the cent; every lsItemId exists and is not archived (Item.json?itemID=IN,[...]); vendor found by name in Vendor.json (exactly one match); no existing Order with this refNum for this vendor (if one exists, record it as lightspeedPo with a log line and skip creating). Size/pack: each line's size and pack (or the description) must match the item name and its case breakdown count. Do not compare prices with Lightspeed: the invoice is the truth. Any failure: set hold, skip.",
 "2. Create the PO on the screen: Inventory > New Order > vendor > Reference # = invoice number > General Notes = poNote > Save Changes. Read the new order id from the URL (id=<orderID>).",
-"3. By API: check existing lines (OrderLine.json?orderID=<id>) so a retry never doubles a line, then POST /API/Account/305872/OrderLine.json {orderID, itemID, quantity, price} per line (price = unitCost, the list price; line discounts and line CRV are not on the item lines, they are in charges.discount and charges.crv). Then PUT /API/Account/305872/Order/<id>.json {shipCost: shipping, otherCost: crv+tax+other, discount}. Methods \"total\" = Don't apply to items (the default).",
+"3. By API: check existing lines (OrderLine.json?orderID=<id>) so a retry never doubles a line, then POST /API/Account/305872/OrderLine.json {orderID, itemID, quantity, price} per line (price = unitCost, the list price; line discounts and line CRV are not on the item lines, they are in charges.discount and charges.crv). Then PUT /API/Account/305872/Order/<id>.json {shipCost: shipping, otherCost: crv+tax+other}. Methods \"total\" = Don't apply to items (the default). The DISCOUNT does not take by API (totalCost ignores it): if discount > 0, set it on the PO screen: Costs > Discount, $ amount = discount, \"Don't apply to items\" > Apply changes, then check totalDiscount equals it.",
 "4. Gotcha: after the charges PUT, Lightspeed resets some line costs to the item's stored cost. Re-read every line and PUT /OrderLine/<orderLineID>.json {price, originalPrice} back to the invoice cost where it differs. Reload the PO screen, re-read: line count, each qty and cost, subTotalCost, shipCost, otherCost and totalCost must equal the invoice. Mismatch: hold, leave the PO Open.",
 "5. Update costs (LC's rule, only after step 4 verified): for each line set the case item's defaultCost = unitCost (the invoice list price per case) with PUT /API/Account/305872/Item/<id>.json {defaultCost}; if the item has an ItemComponent, set that single item's defaultCost = unitCost / component quantity, rounded to 4 decimals. Skip any that already match. Read each back. Record every before -> after in the doc log and the report: that list is the undo.",
 "6. Update the doc: status \"entered\", lightspeedPo = order id, append log {at, step: \"PO <id> created, total $x verified; N item costs updated\"}. Clear the run field.",
