@@ -67,7 +67,7 @@ List `invoices`. Take docs with `status` `ready` or `filed` and no `hold`, oldes
 - `needsCheck` > 0 (lines the page flagged that staff haven't ticked: a reading Claude wasn't sure of, a second-read disagreement, or a size/pack mismatch) → `hold` = "N lines need a check on the page". Skip.
 - Any line without `lsItemId`, or `allMatched` not true → set `hold` = "Missing Lightspeed items: <descriptions>". Skip.
 - Size/pack: each line's `size` and `pack` (or the description) must match the item's name and its case breakdown count. Mismatch → hold.
-- Price: unless `priceConfirmed` is true, compare each line's net cost per case (`unitCost` − `lineDiscount` / `cases`) with the item's `defaultCost`. Off by more than 15% → `hold` = "Price check: <item> invoice $x vs Lightspeed $y (z%)", `holdKind` = "price". Staff release it with "Prices are right" on the Queue after checking.
+- Price: unless `priceConfirmed` is true, compare each line's list price (`unitCost`) and its net per case (`unitCost` − `lineDiscount` / `cases`) with the item's `defaultCost`. The line passes if either is within 15% (Lightspeed usually holds the list price, since discounts aren't applied to items). Neither within 15% → `hold` = "Price check: <item> invoice $x vs Lightspeed $y (z%)", `holdKind` = "price". Staff release it with "Prices are right" on the Queue after checking.
 - `totalsMatch` false → `hold` = "Totals don't match by $x.xx". Skip.
 - Re-add `calc` yourself: sum(cases × unitCost) + shipping + crv + tax + other − discount must equal `charges.invoiceTotal` to the cent. If not → hold.
 - Every `lsItemId` must exist in Lightspeed (`/Item/<id>.json`, not archived). If not → hold.
