@@ -872,9 +872,11 @@ Return ONLY a JSON object, no prose, in this shape:
    "pack": number|null,             // units per case as printed (C12 -> 12, 24pk -> 24, 12/12OZ -> 12); null if none printed
    "unsure": [string],              // names of fields on THIS line you could not read with certainty (e.g. ["description","size"]); [] if all clear
    "cases": number,                 // quantity shipped/delivered (not ordered, if both are shown), in the unit the price is per (usually cases)
-   "unit_cost": number|null,        // price per case as charged, after any per-line discount
+   "list_price": number|null,       // list / regular price per case if printed
+   "discount": number|null,         // per-case discount if printed (positive number)
+   "unit_cost": number|null,        // NET cost per case actually charged: after per-line discounts, NOT including CRV/deposit. null if you can't read it with certainty (it will be worked out from the line total)
    "line_total": number|null,       // extended amount as printed
-   "line_crv": number|null,         // CRV/deposit on this line if shown separately
+   "line_crv": number|null,         // CRV / bottle deposit for this whole line if printed on the line (many distributors add it into the line total)
    "note": string|null              // e.g. "out of stock", "credit", "free goods"
  } ],
  "charges": {
@@ -900,7 +902,16 @@ $("read").onclick = async () => {
     const m = (r.text || "").match(/\{[\s\S]*\}/);
     if (!m) throw new Error("Claude's answer had no invoice data. Try again, or retake the photos straight-on with good light.");
     const data = JSON.parse(m[0]);
-    (data.lines || []).forEach(l => { l.readFlags = []; if (l.unsure && l.unsure.length) l.readFlags.push(`Claude wasn't sure of the ${l.unsure.join(", ")}`); });
+    (data.lines || []).forEach(l => {
+      l.readFlags = []; let unsure = (l.unsure || []).slice();
+      if ((l.unit_cost == null || unsure.includes("unit_cost")) && l.line_total != null && l.cases > 0 && !unsure.includes("line_total") && !unsure.includes("cases")) {
+        const crv = l.line_crv != null ? l.line_crv : caCrv(l.size || l.description, l.pack || packOf(l.description), l.cases);
+        l.unit_cost = Math.round((l.line_total - (crv || 0)) / l.cases * 100) / 100;
+        l.costNote = `Cost per case worked out from the line total${crv ? ` less ${money(crv)} CRV` : ""}: check the case count`;
+        unsure = unsure.filter(x => x !== "unit_cost");
+      }
+      if (unsure.length) l.readFlags.push(`Claude wasn't sure of the ${unsure.join(", ").replace(/_/g, " ")}`);
+    });
     setStatus(`Read ${data.lines?.length || 0} lines. Double-checking every line against the invoice…`);
     const missed = await verifyRead(data);
     fillReview(data);
@@ -916,7 +927,7 @@ $("read").onclick = async () => {
 async function verifyRead(data) {
   const lines = (data.lines || []).map((l, i) => ({ i, description: l.description, size: l.size, pack: l.pack, cases: l.cases, unit_cost: l.unit_cost, line_total: l.line_total }));
   if (!lines.length) return [];
-  const prompt = `Below is a first reading of the line items on this invoice. Look at the invoice images again, line by line, and compare every field with what is actually printed: description (exact characters, every flavor and size word), size, pack (units per case), cases, unit_cost, line_total. Report only real differences, copying exactly what is printed. Also list any printed line items that are missing from the reading.
+  const prompt = `Below is a first reading of the line items on this invoice. Look at the invoice images again, line by line, and compare every field with what is actually printed: description (exact characters, every flavor and size word), size, pack (units per case), cases, unit_cost, line_total. unit_cost means the NET cost per case after discounts and without CRV/deposit (list prices are not unit_cost); line_total may include CRV/deposit. Report only real differences, copying exactly what is printed. Also list any printed line items that are missing from the reading.
 Return ONLY JSON: {"diffs":[{"i":number,"field":"description|size|pack|cases|unit_cost|line_total","printed":string}],"missing_lines":[string]}
 First reading:
 ${JSON.stringify(lines)}`;
@@ -924,7 +935,9 @@ ${JSON.stringify(lines)}`;
     const r = await sample(prompt, { images: pages.map(p => p.blob), modelTier: "complex", cache: false });
     const m = (r.text || "").match(/\{[\s\S]*\}/); if (!m) return [];
     const v = JSON.parse(m[0]);
-    for (const d of v.diffs || []) { const l = data.lines[d.i]; if (l && d.field) l.readFlags.push(`Second read sees ${String(d.field).replace("_", " ")} as "${d.printed}"`); }
+    for (const d of v.diffs || []) { const l = data.lines[d.i];
+      if (l && d.field === "unit_cost") { const p = num(d.printed); if ((l.list_price != null && Math.abs(p - l.list_price) < 0.01) || Math.abs(p - (l.unit_cost || 0)) < 0.01) continue; }
+      if (l && d.field) l.readFlags.push(`Second read sees ${String(d.field).replace("_", " ")} as "${d.printed}"`); }
     return (v.missing_lines || []).map(String);
   } catch (e) { (data.lines || []).forEach(l => l.readFlags.push("Second read didn't run: compare this line with the paper")); return []; }
 }
@@ -938,6 +951,9 @@ function packOf(s) {
   const m = s.match(/\bC\s?(\d+)\b/i) || s.match(/(\d+)\s*-?\s*(?:pk|pack|ct|count)\b/i) || s.match(/\b(\d+)\s*\/\s*\d+(?:\.\d+)?\s*(?:fl\.?\s*)?(?:oz|ml)\b/i) || s.match(/\b(\d+)\s*x\s*\d+(?:\.\d+)?\s*(?:oz|ml)\b/i);
   return m ? +m[1] : null;
 }
+// California CRV: 5 cents per container under 24 oz, 10 cents at 24 oz and up.
+function caCrv(sizeText, pack, cases) { const s = sizeOf(sizeText); if (!s || !pack || !cases) return null; return Math.round(cases * pack * (s.oz >= 24 ? 0.10 : 0.05) * 100) / 100; }
+function lineCrvOf(l) { return l.lineCrv != null ? l.lineCrv : caCrv(l.size || l.description, l.pack || packOf(l.description), l.cases); }
 function lineChecks(l, it) {
   const out = [...(l.readFlags || [])];
   if (!it) return out;
@@ -964,7 +980,7 @@ function lineRow(l = {}) {
   const mt = el("div", { className: "rv-match" });
   const rm = el("button", { className: "btn ghost sm", textContent: "×", title: "Remove line" }); rm.onclick = () => { tr.remove(); recalc(); };
   tr.append(el("td", {}, code), el("td", {}, desc, el("div", {}, size, pack), l.note ? el("div", { className: "rv-small", textContent: l.note }) : "", chk, okLab), el("td", {}, qty), el("td", {}, cost), el("td", {}, tot), el("td", {}, ls, mt), el("td", {}, rm));
-  tr._f = { code, desc, qty, cost, tot, ls, mt, size, pack, chk, okBox, okLab, readFlags: l.readFlags || [], okKey: l.checked ? (l.checkedKey || "") : null };
+  tr._f = { code, desc, qty, cost, tot, ls, mt, size, pack, chk, okBox, okLab, readFlags: l.readFlags || [], okKey: l.checked ? (l.checkedKey || "") : null, lineCrv: l.line_crv ?? l.lineCrv ?? null, costNote: l.costNote || "" };
   ls.oninput = () => { const it = BYLABEL.get(ls.value); ls.dataset.id = it ? it[0] : ""; ls.dataset.src = it ? "picked" : ""; recalc(); };
   return tr;
 }
@@ -986,6 +1002,11 @@ function fillReview(d) {
   warnings = d.warnings || []; chargeDetails = d.charge_details || "";
   $("h-notes").value = warnings.length ? "Check: " + warnings.join(" · ") : "";
   $("lines").replaceChildren(...(d.lines || []).map(lineRow));
+  if (!(c.crv > 0)) {
+    const ls = collect().lines; let sum = 0, all = true;
+    for (const l of ls) { if (l.lineTotal == null) continue; const g = l.lineTotal - l.cases * l.unitCost; if (g < 0.015) continue; const lc = lineCrvOf(l); if (lc != null && Math.abs(g - lc) < 0.015) sum += g; else all = false; }
+    if (sum > 0 && all) { put("c-crv", sum); chargeDetails = (chargeDetails ? chargeDetails + " · " : "") + `CRV ${money(sum)} added up from the line totals`; }
+  }
   applyLookup();
   $("review").hidden = false;
   recalc();
@@ -999,7 +1020,7 @@ function collect() {
   const lines = [...$("lines").children].map(tr => { const f = tr._f; return {
     vendorCode: f.code.value.trim(), description: f.desc.value.trim(), cases: num(f.qty.value), unitCost: num(f.cost.value),
     lineTotal: f.tot.value === "" ? null : num(f.tot.value), lsItemName: f.ls.value.trim(), lsItemId: f.ls.dataset.id || "",
-    size: f.size.value.trim() || null, pack: f.pack.value === "" ? null : num(f.pack.value), readFlags: f.readFlags }; });
+    size: f.size.value.trim() || null, pack: f.pack.value === "" ? null : num(f.pack.value), readFlags: f.readFlags, lineCrv: f.lineCrv, costNote: f.costNote }; });
   lines.forEach((l, i) => { const f = $("lines").children[i]._f; l.flags = lineChecks(l, BYID.get(+l.lsItemId)); const key = l.flags.join("|");
     if (f.okKey != null && f.okKey !== key) { f.okBox.checked = false; f.okKey = null; }   // a new or changed warning needs a new tick
     if (f.okBox.checked) f.okKey = key; l.checked = !!(l.flags.length && f.okBox.checked); l.checkedKey = l.checked ? key : null; });
@@ -1019,7 +1040,8 @@ function recalc() {
   [...$("lines").children].forEach((tr, i) => {
     const l = lines[i], f = tr._f;
     const lineGap = l.lineTotal == null ? 0 : l.lineTotal - l.cases * l.unitCost;
-    const bad = l.lineTotal != null && Math.abs(lineGap) > 0.015 && !(crvInLines && lineGap > 0);
+    const lc = lineCrvOf(l), crvHere = lc != null && Math.abs(lineGap - lc) < 0.015;
+    const bad = l.lineTotal != null && Math.abs(lineGap) > 0.015 && !(crvInLines && lineGap > 0) && !crvHere;
     const missing = !l.cases || !l.unitCost;
     tr.classList.toggle("flag", bad || missing);
     const it = BYID.get(+l.lsItemId), src = f.ls.dataset.src;
@@ -1028,7 +1050,8 @@ function recalc() {
     f.mt.textContent = bad ? `Cases × cost = ${money(l.cases * l.unitCost)}, not ${money(l.lineTotal)}` : missing ? "Missing cases or cost"
       : !l.lsItemId ? (l.lsItemName ? "Not a Lightspeed item: pick from the list" : "Not matched yet")
       : (src === "suggested" ? "Suggested: check it" : src === "saved" ? "Saved match" : "Picked") + brk
-      + (crvInLines && lineGap > 0.015 ? ` · line total includes ${money(lineGap)} CRV` : "");
+      + ((crvInLines || crvHere) && lineGap > 0.015 ? ` · line total includes ${money(lineGap)} CRV` : "")
+      + (f.costNote && !bad && !missing ? ` · ${f.costNote}` : "");
     if (bad || missing) f.mt.className = "rv-match no";
     f.chk.textContent = l.flags.join(" · "); f.chk.hidden = !l.flags.length; f.okLab.hidden = !l.flags.length; f.okBox.checked = l.checked;
     if (l.flags.length && !l.checked) tr.classList.add("flag");
@@ -1270,7 +1293,7 @@ async function loadForEdit(it) {
   const c = it.charges || {};
   fillReview({ vendor: it.vendor, invoice_number: it.invoiceNumber, invoice_date: it.invoiceDate, vendor_po_number: it.vendorPo,
     charges: { delivery: c.shipping, crv: c.crv, tax: c.tax, other: c.other, discount: c.discount, invoice_total: c.invoiceTotal },
-    charge_details: it.chargeDetails, warnings: [], lines: (it.lines || []).map(l => ({ vendor_code: l.vendorCode, description: l.description, size: l.size, pack: l.pack, readFlags: l.readFlags || [], checked: l.checked, checkedKey: l.checkedKey, cases: l.cases, unit_cost: l.unitCost, line_total: l.lineTotal, lsItemId: l.lsItemId, lsItemName: l.lsItemName })) });
+    charge_details: it.chargeDetails, warnings: [], lines: (it.lines || []).map(l => ({ vendor_code: l.vendorCode, description: l.description, size: l.size, pack: l.pack, readFlags: l.readFlags || [], checked: l.checked, checkedKey: l.checkedKey, line_crv: l.lineCrv ?? null, costNote: l.costNote || "", cases: l.cases, unit_cost: l.unitCost, line_total: l.lineTotal, lsItemId: l.lsItemId, lsItemName: l.lsItemName })) });
   warnings = it.warnings || []; $("h-notes").value = it.notes || ""; $("h-rcv").value = it.receivedDate || today();
   [...$("lines").children].forEach(tr => { const i = BYID.get(+tr._f.ls.dataset.id); if (i) { tr._f.ls.value = itemLabel(i); tr._f.ls.dataset.src = "saved"; } });
   recalc(); sub("new"); setStatus(`Editing ${it.vendor} invoice ${it.invoiceNumber}. Save updates the same queue entry.`);
